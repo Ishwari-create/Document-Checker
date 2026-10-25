@@ -70,8 +70,13 @@ def extract_raw_text(pdf_source: Union[str, Path, bytes, io.BytesIO]) -> str:
         stream.seek(0)
     else:
         try:
-            # Handle Streamlit UploadedFile
-            stream = io.BytesIO(pdf_source.read())
+            # Handle Streamlit UploadedFile safely
+            if hasattr(pdf_source, "getvalue"):
+                stream = io.BytesIO(pdf_source.getvalue())
+            elif hasattr(pdf_source, "read"):
+                stream = io.BytesIO(pdf_source.read())
+            else:
+                return ""
         except Exception:
             return ""
 

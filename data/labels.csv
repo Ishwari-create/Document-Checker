@@ -1,0 +1,25 @@
+filename,true_verdict,defect_type,failed_rule,institute_name,category,required_amount,is_scanned
+fdr_test_01_clean.pdf,PASS,NONE,NONE,Apex Institute of Technology,Technical,1500000.0,false
+fdr_test_02_clean.pdf,PASS,NONE,NONE,Apex Institute of Technology,Technical,1500000.0,false
+fdr_test_03_clean.pdf,PASS,NONE,NONE,Apex Institute of Technology,Technical,1500000.0,false
+fdr_test_04_clean.pdf,PASS,NONE,NONE,Apex Institute of Technology,Technical,1500000.0,false
+fdr_test_05_clean.pdf,PASS,NONE,NONE,Apex Institute of Technology,Technical,1500000.0,false
+fdr_test_06_clean.pdf,PASS,NONE,NONE,Apex Institute of Technology,Technical,1500000.0,false
+fdr_test_07_clean.pdf,PASS,NONE,NONE,Apex Institute of Technology,Technical,1500000.0,false
+fdr_test_08_clean.pdf,PASS,NONE,NONE,Apex Institute of Technology,Technical,1500000.0,false
+fdr_test_09_clean.pdf,PASS,NONE,NONE,Apex Institute of Technology,Technical,1500000.0,false
+fdr_test_10_clean.pdf,PASS,NONE,NONE,Apex Institute of Technology,Technical,1500000.0,false
+fdr_test_11_r1_wrong_beneficiary_1.pdf,FAIL,"In favour of Principal, ABC College",R1,Apex Institute of Technology,Technical,1500000.0,false
+fdr_test_12_r1_wrong_beneficiary_2.pdf,FAIL,Beneficiary named as Chairman of Society,R1,Apex Institute of Technology,Technical,1500000.0,false
+fdr_test_13_r2_unapproved_bank_1.pdf,FAIL,Issued by unapproved Cooperative Credit Society,R2,Apex Institute of Technology,Technical,1500000.0,false
+fdr_test_14_r2_unapproved_bank_2.pdf,FAIL,Issued by unauthorized local finance firm,R2,Apex Institute of Technology,Technical,1500000.0,false
+fdr_test_15_r3_short_tenure_3yr.pdf,FAIL,Tenure is 3 years instead of mandatory 8 years,R3,Apex Institute of Technology,Technical,1500000.0,false
+fdr_test_16_r3_short_tenure_5yr.pdf,FAIL,Tenure is 5 years instead of mandatory 8 years,R3,Apex Institute of Technology,Technical,1500000.0,false
+fdr_test_17_r4_insufficient_amt_5L.pdf,FAIL,Deposit amount is only 5 Lakhs (deficit 10L),R4,Apex Institute of Technology,Technical,1500000.0,false
+fdr_test_18_r4_insufficient_amt_10L.pdf,FAIL,Deposit amount is only 10 Lakhs (deficit 5L),R4,Apex Institute of Technology,Technical,1500000.0,false
+fdr_test_19_r5_institute_mismatch_1.pdf,FAIL,Institute name differs completely from application,R5,Apex Institute of Technology,Technical,1500000.0,false
+fdr_test_20_r5_institute_mismatch_2.pdf,FAIL,Trust name provided instead of approved college,R5,Apex Institute of Technology,Technical,1500000.0,false
+fdr_test_21_r6_future_issue_date.pdf,FAIL,Issue date set in future (year 2035),R6,Apex Institute of Technology,Technical,1500000.0,false
+fdr_test_22_r6_matured_deposit.pdf,FAIL,Deposit is already past its maturity date,R6,Apex Institute of Technology,Technical,1500000.0,false
+fdr_test_23_r7_tamper_void_stamp.pdf,UNCERTAIN,Document marked as VOID / SPECIMEN,R7,Apex Institute of Technology,Technical,1500000.0,false
+fdr_test_24_r7_tamper_sample_copy.pdf,UNCERTAIN,Document marked as DO NOT USE FOR APPROVAL,R7,Apex Institute of Technology,Technical,1500000.0,false

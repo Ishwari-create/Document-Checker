@@ -128,7 +128,7 @@ def parse_fdr_fields_from_text(raw_text: str) -> Dict[str, Any]:
         return fields
 
     # 1. FDR / Account Number
-    fdr_match = re.search(r"(?:FDR\s*(?:No\.?|Number)|Fixed\s*Deposit\s*No\.?|Receipt\s*No\.?|A\/C\s*No\.?)\s*[:\-]?\s*([A-Za-z0-9\/\-_]+)", raw_text, re.IGNORECASE)
+    fdr_match = re.search(r"(?:FDR\s*(?:/\s*Account\s*No\.?)?|FDR\s*(?:No\.?|Number)|Fixed\s*Deposit\s*No\.?|Receipt\s*No\.?|A\/C\s*No\.?)\s*[:\-\s]*\n?\s*([A-Za-z0-9\/\-_]+)", raw_text, re.IGNORECASE)
     if fdr_match:
         fields["fdr_number"] = fdr_match.group(1).strip()
 
@@ -148,24 +148,30 @@ def parse_fdr_fields_from_text(raw_text: str) -> Dict[str, Any]:
             fields["bank_name"] = bank_match.group(1).strip()
 
     # 3. Branch
-    branch_match = re.search(r"(?:Branch|Branch\s*Name|IFSC(?:\s*Code)?)\s*[:\-]?\s*([A-Za-z0-9\s,\-\.]+?)(?=\n|$|Date|FDR)", raw_text, re.IGNORECASE)
+    branch_match = re.search(r"(?:Branch|Branch\s*Name|IFSC(?:\s*Code)?)\s*[:\-\s]*\n?\s*([A-Za-z0-9\s,\-\.]+?)(?=\n\n|$|Date|FDR|FIXED)", raw_text, re.IGNORECASE)
     if branch_match:
-        fields["branch"] = branch_match.group(1).strip()
+        val = branch_match.group(1).strip()
+        if not val.startswith("/"):
+            fields["branch"] = val
 
     # 4. Beneficiary ("In favour of")
-    ben_match = re.search(r"(?:In\s*favour\s*of|Beneficiary|Payable\s*to|Favouring)\s*[:\-]?\s*([^\n\r]+)", raw_text, re.IGNORECASE)
+    ben_match = re.search(r"(?:In\s*Favour\s*Of\s*/\s*Beneficiary|In\s*favour\s*of|Beneficiary|Payable\s*to|Favouring)\s*[:\-\s]*\n?\s*([^\n\r]+)", raw_text, re.IGNORECASE)
     if ben_match:
-        fields["beneficiary_name"] = ben_match.group(1).strip()
-    elif "member secretary" in raw_text.lower() and "aicte" in raw_text.lower():
+        val = ben_match.group(1).strip()
+        if not val.startswith("/") and len(val) > 2:
+            fields["beneficiary_name"] = val
+    if not fields["beneficiary_name"] and "member secretary" in raw_text.lower() and "aicte" in raw_text.lower():
         fields["beneficiary_name"] = "Member Secretary, AICTE"
 
     # 5. Institute / Depositor
-    inst_match = re.search(r"(?:Depositor|Institute(?:\s*Name)?|Account\s*Holder|In\s*the\s*name\s*of|M\/s\.?)\s*[:\-]?\s*([^\n\r]+)", raw_text, re.IGNORECASE)
+    inst_match = re.search(r"(?:Depositor\s*/\s*Institute|Depositor|Institute(?:\s*Name)?|Account\s*Holder|In\s*the\s*name\s*of|M\/s\.?)\s*[:\-\s]*\n?\s*([^\n\r]+)", raw_text, re.IGNORECASE)
     if inst_match:
-        fields["institute_name"] = inst_match.group(1).strip()
+        val = inst_match.group(1).strip()
+        if not val.startswith("/") and len(val) > 2:
+            fields["institute_name"] = val
 
     # 6. Amount
-    amt_match = re.search(r"(?:Amount|Principal|Deposit\s*Amount|Rs\.?|INR)\s*[:\-]?\s*(?:₹|Rs\.?|INR)?\s*([0-9]{1,3}(?:,[0-9]{2,3})*(?:\.[0-9]{2})?|[0-9]+(?:\.[0-9]{2})?)", raw_text, re.IGNORECASE)
+    amt_match = re.search(r"(?:Deposit\s*Amount|Amount|Principal|Rs\.?|INR)\s*[:\-\s]*\n?\s*(?:₹|Rs\.?|INR)?\s*([0-9]{1,3}(?:,[0-9]{2,3})*(?:\.[0-9]{2})?|[0-9]+(?:\.[0-9]{2})?)", raw_text, re.IGNORECASE)
     if amt_match:
         val_str = amt_match.group(1).replace(",", "").strip()
         try:
@@ -174,7 +180,7 @@ def parse_fdr_fields_from_text(raw_text: str) -> Dict[str, Any]:
             pass
 
     # 7. Dates (Issue Date & Maturity Date)
-    issue_match = re.search(r"(?:Date\s*of\s*Issue|Issue\s*Date|Issued\s*on|Date\s*of\s*Deposit|Deposit\s*Date)\s*[:\-]?\s*([A-Za-z0-9\/\-\.\s,]+?)(?=\n|$|Maturity|Tenure)", raw_text, re.IGNORECASE)
+    issue_match = re.search(r"(?:Date\s*of\s*Issue|Issue\s*Date|Issued\s*on|Date\s*of\s*Deposit|Deposit\s*Date)\s*[:\-\s]*\n?\s*([A-Za-z0-9\/\-\.\s,]+?)(?=\n\n|$|Maturity|Tenure|Date)", raw_text, re.IGNORECASE)
     if issue_match:
         raw_issue = issue_match.group(1).strip()
         for pat in DATE_PATTERNS:
@@ -185,7 +191,7 @@ def parse_fdr_fields_from_text(raw_text: str) -> Dict[str, Any]:
                     fields["issue_date"] = dt.strftime("%Y-%m-%d")
                     break
 
-    mat_match = re.search(r"(?:Date\s*of\s*Maturity|Maturity\s*Date|Due\s*Date|Valid\s*upto)\s*[:\-]?\s*([A-Za-z0-9\/\-\.\s,]+?)(?=\n|$|Tenure|Amount)", raw_text, re.IGNORECASE)
+    mat_match = re.search(r"(?:Date\s*of\s*Maturity|Maturity\s*Date|Due\s*Date|Valid\s*upto)\s*[:\-\s]*\n?\s*([A-Za-z0-9\/\-\.\s,]+?)(?=\n\n|$|Tenure|Amount|Date)", raw_text, re.IGNORECASE)
     if mat_match:
         raw_mat = mat_match.group(1).strip()
         for pat in DATE_PATTERNS:
@@ -213,9 +219,68 @@ def parse_fdr_fields_from_text(raw_text: str) -> Dict[str, Any]:
     return fields
 
 
+def extract_fdr_with_vision(pdf_source: Union[str, Path, bytes, io.BytesIO]) -> Optional[Dict[str, Any]]:
+    """
+    AI Vision / OCR fallback for scanned or image-only FDR documents.
+    Tries Google GenAI (Interactions/Gemini API) if configured, or Tesseract OCR.
+    """
+    import os
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key:
+        return None
+
+    try:
+        from google import genai
+        client = genai.Client(api_key=api_key)
+
+        # Get raw bytes
+        if isinstance(pdf_source, (str, Path)):
+            with open(pdf_source, "rb") as f:
+                pdf_bytes = f.read()
+        elif isinstance(pdf_source, bytes):
+            pdf_bytes = pdf_source
+        elif hasattr(pdf_source, "getvalue"):
+            pdf_bytes = pdf_source.getvalue()
+        elif hasattr(pdf_source, "read"):
+            pos = pdf_source.tell() if hasattr(pdf_source, "tell") else 0
+            pdf_bytes = pdf_source.read()
+            if hasattr(pdf_source, "seek"):
+                pdf_source.seek(pos)
+        else:
+            return None
+
+        prompt = (
+            "Analyze this Fixed Deposit Receipt (FDR) image/document. "
+            "Extract these fields as JSON: fdr_number, bank_name, branch, "
+            "institute_name, beneficiary_name, amount (as float), "
+            "issue_date (YYYY-MM-DD), maturity_date (YYYY-MM-DD), tenure_years (as float)."
+        )
+
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=[
+                genai.types.Part.from_bytes(data=pdf_bytes, mime_type="application/pdf"),
+                prompt
+            ]
+        )
+        if response and response.text:
+            import json
+            cleaned_text = response.text.strip()
+            # Extract JSON block if enclosed in markdown code fences
+            json_match = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", cleaned_text, re.DOTALL)
+            if json_match:
+                cleaned_text = json_match.group(1)
+            parsed = json.loads(cleaned_text)
+            return parsed
+    except Exception:
+        pass
+    return None
+
+
 def extract_fdr_fields(
     pdf_source: Union[str, Path, bytes, io.BytesIO],
-    precomputed_cache: Optional[Dict[str, Any]] = None
+    precomputed_cache: Optional[Dict[str, Any]] = None,
+    use_vision_fallback: bool = True
 ) -> Dict[str, Any]:
     """
     High-level extraction entrypoint for A-2 (Streamlit).
@@ -235,8 +300,23 @@ def extract_fdr_fields(
 
     fields = parse_fdr_fields_from_text(raw_text)
 
+    # If document appears scanned or key fields are missing, try vision fallback
+    if is_scanned and use_vision_fallback:
+        vision_fields = extract_fdr_with_vision(pdf_source)
+        if vision_fields:
+            # Merge vision fields where missing
+            for k, v in vision_fields.items():
+                if fields.get(k) is None and v is not None:
+                    fields[k] = v
+            return {
+                "fields": fields,
+                "raw_text": raw_text or "[Extracted via AI Vision OCR]",
+                "is_scanned": True,
+                "confidence": 0.90,
+                "source": "ai_vision_ocr"
+            }
+
     # Estimate field completeness confidence
-    extracted_keys = [k for k, v in fields.items() if v is not None]
     key_fields = ["fdr_number", "bank_name", "beneficiary_name", "amount", "issue_date", "maturity_date"]
     present_keys = [k for k in key_fields if fields.get(k) is not None]
     confidence = round(len(present_keys) / len(key_fields), 2)

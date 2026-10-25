@@ -204,7 +204,7 @@ def _check_r3_tenure(fields: Dict[str, Any], rule_cfg: Dict[str, Any]) -> RuleVe
                 reasoning="Date parsing error — tenure could not be computed."
             )
 
-    evidence = f"Issue: {issue_date or 'N/A'} → Maturity: {maturity_date or 'N/A'} = {tenure} years"
+    evidence = f"Issue: {issue_date or 'N/A'} -> Maturity: {maturity_date or 'N/A'} = {tenure} years"
     if tenure >= min_years - (tolerance_days / 365.25):
         return RuleVerdict(
             rule_id="R3", name=rule_cfg["name"], clause=rule_cfg["clause"],

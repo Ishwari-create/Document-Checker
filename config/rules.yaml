@@ -50,7 +50,7 @@ rules:
   - id: R6
     name: "Date Logic & Validity"
     clause: "AICTE APH Clause 4.1.5"
-    severity: "WARNING"
+    severity: "FATAL"
     description: "Issue date cannot be in the future, maturity date must be after issue date, and FDR cannot be pre-matured"
     rejection_message: "Inconsistent dates detected: Issue date is in the future or maturity date is invalid."
 

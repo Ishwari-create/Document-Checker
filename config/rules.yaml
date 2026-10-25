@@ -1,0 +1,62 @@
+rules:
+  - id: R1
+    name: "Beneficiary Verification"
+    clause: "AICTE APH Clause 4.1.2"
+    severity: "FATAL"
+    description: "FDR must be in favour of the AICTE Member Secretary or jointly with AICTE"
+    required_keywords:
+      - "member secretary"
+      - "aicte"
+    rejection_message: "The Fixed Deposit Receipt is not drawn in favour of the Member Secretary, AICTE as mandated under Clause 4.1.2."
+
+  - id: R2
+    name: "Approved Bank Verification"
+    clause: "AICTE APH Clause 4.1.2 / RBI Schedule II"
+    severity: "FATAL"
+    description: "FDR must be issued by a Nationalised Bank or Scheduled Commercial Bank approved by RBI"
+    rejection_message: "The issuing bank is not recognized as a Nationalised or Scheduled Commercial Bank under RBI Schedule II."
+
+  - id: R3
+    name: "Tenure Compliance (8 Years)"
+    clause: "AICTE APH Clause 4.1.3"
+    severity: "FATAL"
+    description: "Tenure of the FDR must be for a minimum duration of 8 years (96 months)"
+    minimum_tenure_years: 8.0
+    tolerance_days: 15
+    rejection_message: "The tenure of the FDR is less than the mandatory 8 years (96 months) required under Clause 4.1.3."
+
+  - id: R4
+    name: "Prescribed Security Amount"
+    clause: "AICTE APH Clause 4.1.4"
+    severity: "FATAL"
+    description: "FDR amount must meet or exceed the mandatory security deposit threshold for the institution category"
+    default_required_amount: 1500000.00
+    category_thresholds:
+      Technical: 1500000.00
+      Management: 1000000.00
+      Pharmacy: 1500000.00
+      Architecture: 1000000.00
+      Applied Arts: 1000000.00
+    rejection_message: "The deposit amount does not satisfy the minimum prescribed amount under Clause 4.1.4."
+
+  - id: R5
+    name: "Institute Identity Match"
+    clause: "AICTE APH Clause 2.3.1"
+    severity: "FATAL"
+    description: "The institute name on the FDR must match the institutional applicant records in AICTE database"
+    match_threshold: 85.0
+    rejection_message: "The depositor/institute name on the FDR differs significantly from the AICTE application record."
+
+  - id: R6
+    name: "Date Logic & Validity"
+    clause: "AICTE APH Clause 4.1.5"
+    severity: "WARNING"
+    description: "Issue date cannot be in the future, maturity date must be after issue date, and FDR cannot be pre-matured"
+    rejection_message: "Inconsistent dates detected: Issue date is in the future or maturity date is invalid."
+
+  - id: R7
+    name: "Document Integrity & Tamper Check"
+    clause: "AICTE APH Clause 1.4"
+    severity: "WARNING"
+    description: "PDF metadata and visual scan check for signs of unauthorized manipulation or missing bank authenticity marks"
+    rejection_message: "Potential document anomalies or tampering indicators detected during forensic integrity check."

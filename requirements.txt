@@ -1,0 +1,16 @@
+# Core PDF processing
+pypdf>=3.17.0
+pdfplumber>=0.10.0
+
+# Fuzzy string matching for Rule R5
+rapidfuzz>=3.6.0
+
+# YAML config loader
+PyYAML>=6.0.1
+
+# ─── A-2 Dependencies (for team member's Streamlit frontend) ───
+# streamlit>=1.35.0
+
+# ─── Dev / Testing ───
+pytest>=8.0.0
+pytest-cov>=4.1.0

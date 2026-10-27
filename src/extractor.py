@@ -101,7 +101,12 @@ def _segments_from_text_layer(data: bytes) -> Tuple[List[dict], List[dict]]:
         for i, page in enumerate(pdf.pages):
             pages.append({"page": i, "width": float(page.width), "height": float(page.height)})
             # Diagonal watermarks ("SAMPLE", "COPY") are rotated text; ignore them.
-            upright = page.filter(lambda o: o.get("object_type") != "char" or o.get("upright", True))
+            def _horizontal(o):
+                if o.get("object_type") != "char":
+                    return True
+                m = o.get("matrix") or (1, 0, 0, 1, 0, 0)
+                return o.get("upright", True) and abs(m[1]) < 0.05 and abs(m[2]) < 0.05
+            upright = page.filter(_horizontal)
             words = upright.extract_words(keep_blank_chars=False, x_tolerance=2, y_tolerance=3)
             segments += _rows_to_segments(words, i, row_tol=3)
     return segments, pages
@@ -173,7 +178,7 @@ def read_document(src: PdfSource) -> Dict[str, Any]:
 # ---------------------------------------------------------------------------
 _MONTHS = "jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec"
 _DATE_RE = re.compile(
-    rf"(\d{{1,2}}\s*[-/.]\s*\d{{1,2}}\s*[-/.]\s*\d{{4}}"
+    rf"(\d{{1,2}}\s*[-/.,]\s*\d{{1,2}}\s*[-/.,]\s*\d{{4}}"
     rf"|\d{{4}}-\d{{2}}-\d{{2}}"
     rf"|\d{{1,2}}[\s-]*(?:{_MONTHS})[a-z]*[\s,-]*\d{{4}})",
     re.IGNORECASE,
@@ -188,7 +193,8 @@ def parse_date(text: str) -> Optional[str]:
     if not m:
         return None
     raw = re.sub(r"\s+", " ", m.group(1)).strip()
-    raw = re.sub(r"\s*([-/.])\s*", r"\1", raw)
+    raw = re.sub(r"\s*([-/.,])\s*", r"\1", raw)
+    raw = re.sub(r"^(\d{1,2})[-/.,](\d{1,2})[-/.,](\d{4})$", r"\1/\2/\3", raw)
     raw = raw.replace("Sept", "Sep").replace("sept", "sep")
     for fmt in ("%d/%m/%Y", "%d-%m-%Y", "%d.%m.%Y", "%Y-%m-%d", "%d-%b-%Y",
                 "%d %b %Y", "%d %B %Y", "%d-%B-%Y", "%d %b, %Y", "%d %B, %Y"):
@@ -242,21 +248,18 @@ def words_to_number(text: str) -> Optional[float]:
 
 # ---------------------------------------------------------------------------
 # 3. Label-anchored field finding
-# ---------------------------------------------------------------------------
 # Order matters: the first pattern that matches the start of a cell wins.
-LABELS: List[Tuple[str, str]] = [
-    ("maturity_amount", r"maturity\s*(value|amount)"),
-    ("amount_words",    r"(amount\s*in\s*words|in\s*words|sum\s*of\s*rupees)"),
-    ("maturity_date",   r"(date\s*of\s*maturity|maturity\s*date|due\s*(date|on)|matures?\s*on|maturing\s*on)"),
-    ("issue_date",      r"(date\s*of\s*(deposit|issue)|deposit\s*date|issue\s*date|value\s*date|opened\s*on|date\s*of\s*opening)"),
-    ("beneficiary_name", r"(in\s*favou?r\s*of|favou?ring|payable\s*to|beneficiary|lien\s*(marked\s*)?in\s*favou?r\s*of)"),
-    ("depositor_name",  r"(name\s*of\s*(the\s*)?depositor|depositor(\s*name)?|deposited\s*by|received\s*from|account\s*holder|in\s*the\s*name\s*of)"),
-    ("fdr_number",      r"(fdr|f\.d\.r|receipt|deposit|term\s*deposit|(td\s*)?a/?c|td|account)\s*(no|number|#)"),
-    ("amount",          r"(principal(\s*amount)?|deposit\s*amount|amount\s*of\s*deposit|amount)(\s*\(?\s*(rs|inr|₹)\s*\)?)?"),
-    ("tenure_text",     r"(period(\s*of\s*deposit)?|tenure|term)"),
-    ("branch",          r"(branch(\s*name)?|issuing\s*branch)"),
-    ("ifsc",            r"ifsc(\s*code)?"),
-]
+LABELS_FILE = Path(__file__).resolve().parent.parent / "config" / "field_labels.yaml"
+
+
+def _load_labels() -> List[Tuple[str, str]]:
+    import yaml
+    data = yaml.safe_load(LABELS_FILE.read_text(encoding="utf-8"))
+    return [(e["field"], e["pattern"]) for e in data["fields"]]
+
+
+# Order matters: the first pattern that matches the start of a cell wins.
+LABELS: List[Tuple[str, str]] = _load_labels()
 # Scans turn spaces into dots or quotes ("Receipt.No_", "Name:of Depositor"),
 # so any run of non-letters is accepted between the words of a label.
 _LABEL_RES = [(f, re.compile(r"^[\W_]*" + p.replace(r"\s*", r"[\W_]*") + r"(?![a-z])[\W_]*", re.IGNORECASE))
@@ -303,12 +306,14 @@ def parse_fields(segments: List[dict], pages: List[dict]) -> Tuple[Dict[str, Any
         where[field] = {"page": seg["page"], "bbox": seg["bbox"]}
 
     for i, seg in enumerate(segments):
-        text = seg["text"]
+        text = re.sub(r"\((e?s)\)", r"\1", seg["text"])          # "Name(s) of Depositor(s)" -> "Names of Depositors"
         for field, rx in _LABEL_RES:
             m = rx.match(text)
             if not m:
                 continue
             rest = text[m.end():]
+            if len(re.findall(r"[A-Za-z]{3,}", rest)) == 0 and not re.search(r"\d{2}", rest):
+                rest = ""                                      # only noise after the label: look at the next cell/line
             value, vseg = _value_after_label(i, segments, rest)
             if field in ("issue_date", "maturity_date", "amount"):
                 parser = parse_amount if field == "amount" else parse_date
@@ -360,6 +365,11 @@ def parse_fields(segments: List[dict], pages: List[dict]) -> Tuple[Dict[str, Any
 
     if fields["amount_words"]:
         fields["amount_in_words_value"] = words_to_number(fields["amount_words"])
+    if fields["amount"] is None and fields["amount_in_words_value"]:
+        fields["amount"] = fields["amount_in_words_value"]
+        fields["_amount_from_words"] = True
+        if "amount_words" in where:
+            where["amount"] = where["amount_words"]
 
     if fields["fdr_number"]:
         fields["fdr_number"] = fields["fdr_number"].split()[0].strip(".,;")

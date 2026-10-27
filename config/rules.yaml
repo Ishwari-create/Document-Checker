@@ -39,6 +39,7 @@ exempt_institution_types:
 rules:
   - id: R1
     name: "Drawn in favour of Member Secretary, AICTE"
+    problem: "Not payable to Member Secretary, AICTE"
     severity: FATAL
     source: LOI
     clause: "LOI condition; APH cl. 9"
@@ -49,6 +50,7 @@ rules:
 
   - id: R2
     name: "Issued by a Nationalised / Scheduled Commercial Bank"
+    problem: "Bank not eligible"
     severity: FATAL
     source: LOI
     clause: "LOI condition; RBI Act Second Schedule"
@@ -59,6 +61,7 @@ rules:
 
   - id: R3
     name: "Tenure covers the Security Deposit period"
+    problem: "Tenure too short"
     severity: FATAL
     source: REG2024
     clause: "Guidelines 2024-27 cl. 6.2(g)"
@@ -69,6 +72,7 @@ rules:
 
   - id: R4
     name: "Amount meets the required Security Deposit"
+    problem: "Amount short"
     severity: FATAL
     source: APH_CL9
     clause: "APH cl. 9 (amount table); Guidelines 2024-27 cl. 4.15(b) (sum across programmes)"
@@ -86,6 +90,7 @@ rules:
 
   - id: R5
     name: "Depositor matches the applicant institute / trust"
+    problem: "Depositor is not the applicant"
     severity: FATAL
     source: REG2024
     clause: "Guidelines 2024-27 cl. 6.2(f) (SD created by the applicant)"
@@ -96,6 +101,7 @@ rules:
 
   - id: R6
     name: "Dates are valid"
+    problem: "Dates invalid"
     severity: FATAL
     source: REG2024
     clause: "Guidelines 2024-27 cl. 11.8 (no premature encashment)"
@@ -104,6 +110,7 @@ rules:
 
   - id: R7
     name: "Submitted within 15 days of the Letter of Approval"
+    problem: "Submitted late"
     severity: WARNING
     source: REG2024
     clause: "Guidelines 2024-27 cl. 6.2(f)"
@@ -118,6 +125,7 @@ rules:
 
   - id: R8
     name: "Amount in figures agrees with amount in words"
+    problem: "Figures and words differ"
     severity: FATAL
     source: PRACTICE
     clause: "Scrutiny practice (alteration indicator)"
@@ -126,6 +134,7 @@ rules:
 
   - id: R9
     name: "Confirmed by the issuing bank"
+    problem: "Bank record does not match"
     severity: FATAL
     source: PS
     clause: "SIH26261: verification with issuing authority"
@@ -135,6 +144,7 @@ rules:
 
   - id: R10
     name: "FDR not already used in another application"
+    problem: "FDR already used elsewhere"
     severity: FATAL
     source: PS
     clause: "SIH26261: duplicate detection"

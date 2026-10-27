@@ -1,0 +1,8 @@
+<figure class="receipt" aria-label="Receipt with evidence boxes">
+<svg viewBox="0 0 {{ page.width }} {{ page.height }}" role="img">
+  <image href="{{ img }}" x="0" y="0" width="{{ page.width }}" height="{{ page.height }}"/>
+  {% for b in boxes %}<rect class="box {{ b.status }}" data-rules="{{ b.rules }}" x="{{ b.x }}" y="{{ b.y }}" width="{{ b.w }}" height="{{ b.h }}"><title>{{ b.field|replace('_',' ') }} ({{ b.rules }})</title></rect>{% endfor %}
+</svg>
+<figcaption class="cap">Boxes mark where each value was read. Point at a finding to see its evidence.
+  {% if extraction.method == 'ocr' %}Scanned copy, read by OCR (quality {{ '%.0f'|format(extraction.read_quality*100) }}%).{% else %}Digital PDF, read from its text layer.{% endif %}</figcaption>
+</figure>

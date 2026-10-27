@@ -1,0 +1,30 @@
+# Label wording used on bank deposit receipts, per field.
+# Each entry is a regular expression matched at the start of a printed cell; \s* also
+# accepts dots, quotes and other scan noise between words. Order matters: the first
+# field whose pattern matches wins (so 'maturity amount' is tested before 'amount').
+#
+# Onboarding a bank whose receipts use new wording means adding its phrases here.
+# No code change is needed. Re-run tools/evaluate.py afterwards.
+fields:
+  - field: maturity_amount
+    pattern: '(maturity\s*(value|amount)|amount\s*(payable\s*)?on\s*maturity)'
+  - field: amount_words
+    pattern: '(amount\s*in\s*words|in\s*words|sum\s*of\s*rupees|rupees)'
+  - field: maturity_date
+    pattern: '(date\s*of\s*maturity|maturity\s*date|due\s*(date|on)|matures?\s*on|maturing\s*on|payable\s*on|expiry\s*date)'
+  - field: issue_date
+    pattern: '(date\s*of\s*(deposit|issue|commencement|opening|investment)|deposit\s*date|issue\s*date|value\s*date|start\s*date|effective\s*(date|from)|opened\s*on|issued\s*on|commencing\s*(on|from))'
+  - field: beneficiary_name
+    pattern: '(in\s*favou?r\s*of|favou?ring|payable\s*to|beneficiary|pledged\s*to|lien\s*(marked\s*)?(in\s*favou?r\s*of|to)|under\s*lien\s*(of|to))'
+  - field: depositor_name
+    pattern: '(names?\s*of\s*(the\s*)?(depositors?|holders?|customers?)|depositors?(\s*names?)?|deposited\s*by|received\s*from|account\s*holders?|(customer|holder)\s*name|in\s*the\s*name\s*of)'
+  - field: fdr_number
+    pattern: '(fdr|f\.d\.r|stdr|tdr|fd|deposit\s*receipt|receipt|deposit|term\s*deposit|certificate|(td\s*)?a/?c|td|account)\s*(no|number|#)'
+  - field: amount
+    pattern: '(principal(\s*amount)?|deposit\s*amount|amount\s*of\s*deposit|face\s*value|amount)(\s*\(?\s*(rs|inr|₹)\s*\)?)?'
+  - field: tenure_text
+    pattern: '(period(\s*of\s*deposit)?|tenure|tenor|term)'
+  - field: branch
+    pattern: '(branch(\s*name)?|issuing\s*branch)'
+  - field: ifsc
+    pattern: 'ifs(c)?(\s*code)?'

@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block body %}
+<h1>Rules in force</h1>
+<p class="muted">Rule pack <b>{{ pack.pack }}</b>, version {{ pack.version }}. Rules live in <code>config/rules.yaml</code>; changing a threshold or adding a document type needs no code change. Every check records the version it used.</p>
+<div class="tablewrap"><table>
+<tr><th>Rule</th><th>What is checked</th><th>Source</th><th>If it fails</th></tr>
+{% for r in pack.rules %}<tr><td>{{ r.id }}</td><td>{{ r.name }}{% if r.minimum_tenure_years %} ({{ r.minimum_tenure_years }} years){% endif %}{% if not r.verified %} <span class="st st-UNCERTAIN">to confirm</span>{% endif %}</td>
+<td class="small">{{ r.clause }}<div class="muted">{{ pack.sources[r.source] }}</div></td><td class="small">{{ r.severity|lower|replace('fatal','deficiency')|replace('warning','officer review / penalty') }}</td></tr>{% endfor %}
+</table></div>
+<p class="small muted">Exempt from the Security Deposit: {{ pack.exempt_institution_types|join(', ') }}.</p>
+{% endblock %}

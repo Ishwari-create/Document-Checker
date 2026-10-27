@@ -17,9 +17,9 @@
       "Maturity date": "24/24",
       "Depositor": "24/24"
     },
-    "avg_seconds_text_pdf": 0.05,
-    "avg_seconds_scan": 1.57,
-    "total_seconds": 7.3
+    "avg_seconds_text_pdf": 0.04,
+    "avg_seconds_scan": 1.54,
+    "total_seconds": 6.9
   },
   "per_rule": [
     {
@@ -128,8 +128,9 @@
         "R1"
       ],
       "review_rules": [],
-      "seconds": 1.48,
-      "note": "Drawn in favour of the trust secretary"
+      "seconds": 1.5,
+      "note": "Drawn in favour of the trust secretary",
+      "read_problems": []
     },
     {
       "doc": "FDR-T02",
@@ -145,8 +146,9 @@
         "R4"
       ],
       "review_rules": [],
-      "seconds": 0.04,
-      "note": "Two programmes (Engg + Mgmt) need 50 L; FDR covers only Engg (35 L)"
+      "seconds": 0.03,
+      "note": "Two programmes (Engg + Mgmt) need 50 L; FDR covers only Engg (35 L)",
+      "read_problems": []
     },
     {
       "doc": "FDR-T03",
@@ -162,8 +164,9 @@
         "R6"
       ],
       "review_rules": [],
-      "seconds": 0.04,
-      "note": "Deposit date is after the date of submission (post-dated)"
+      "seconds": 0.03,
+      "note": "Deposit date is after the date of submission (post-dated)",
+      "read_problems": []
     },
     {
       "doc": "FDR-T04",
@@ -179,8 +182,9 @@
         "R6"
       ],
       "review_rules": [],
-      "seconds": 0.04,
-      "note": "Old FDR of 2014 that matured in 2024, re-submitted"
+      "seconds": 0.03,
+      "note": "Old FDR of 2014 that matured in 2024, re-submitted",
+      "read_problems": []
     },
     {
       "doc": "FDR-T05",
@@ -196,8 +200,9 @@
         "R5"
       ],
       "review_rules": [],
-      "seconds": 1.63,
-      "note": "Different institute's name"
+      "seconds": 1.49,
+      "note": "Different institute's name",
+      "read_problems": []
     },
     {
       "doc": "FDR-T06",
@@ -210,7 +215,8 @@
       "failed_rules": [],
       "review_rules": [],
       "seconds": 0.04,
-      "note": ""
+      "note": "",
+      "read_problems": []
     },
     {
       "doc": "FDR-T07",
@@ -229,7 +235,8 @@
       ],
       "review_rules": [],
       "seconds": 0.04,
-      "note": "Figures overwritten to 35 L; words still read 25 L; bank record says 25 L"
+      "note": "Figures overwritten to 35 L; words still read 25 L; bank record says 25 L",
+      "read_problems": []
     },
     {
       "doc": "FDR-T08",
@@ -242,7 +249,8 @@
       "failed_rules": [],
       "review_rules": [],
       "seconds": 0.03,
-      "note": ""
+      "note": "",
+      "read_problems": []
     },
     {
       "doc": "FDR-T09",
@@ -258,8 +266,9 @@
         "R5"
       ],
       "review_rules": [],
-      "seconds": 0.05,
-      "note": "Deposit made by an unrelated company"
+      "seconds": 0.04,
+      "note": "Deposit made by an unrelated company",
+      "read_problems": []
     },
     {
       "doc": "FDR-T10",
@@ -272,7 +281,8 @@
       "failed_rules": [],
       "review_rules": [],
       "seconds": 0.04,
-      "note": ""
+      "note": "",
+      "read_problems": []
     },
     {
       "doc": "FDR-T11",
@@ -288,8 +298,9 @@
         "R4"
       ],
       "review_rules": [],
-      "seconds": 0.05,
-      "note": "Women's college slab is 28 L; FDR is 25 L"
+      "seconds": 0.04,
+      "note": "Women's college slab is 28 L; FDR is 25 L",
+      "read_problems": []
     },
     {
       "doc": "FDR-T12",
@@ -305,8 +316,9 @@
         "R3"
       ],
       "review_rules": [],
-      "seconds": 0.06,
-      "note": "8 years: follows the older instruction, not the 10-year SD period"
+      "seconds": 0.04,
+      "note": "8 years: follows the older instruction, not the 10-year SD period",
+      "read_problems": []
     },
     {
       "doc": "FDR-T13",
@@ -318,8 +330,9 @@
       "expected_rules": [],
       "failed_rules": [],
       "review_rules": [],
-      "seconds": 0.06,
-      "note": ""
+      "seconds": 0.04,
+      "note": "",
+      "read_problems": []
     },
     {
       "doc": "FDR-T14",
@@ -337,8 +350,9 @@
       "review_rules": [
         "R9"
       ],
-      "seconds": 0.05,
-      "note": "Co-operative bank"
+      "seconds": 0.03,
+      "note": "Co-operative bank",
+      "read_problems": []
     },
     {
       "doc": "FDR-T15",
@@ -350,8 +364,9 @@
       "expected_rules": [],
       "failed_rules": [],
       "review_rules": [],
-      "seconds": 0.05,
-      "note": ""
+      "seconds": 0.03,
+      "note": "",
+      "read_problems": []
     },
     {
       "doc": "FDR-T16",
@@ -367,8 +382,9 @@
         "R3"
       ],
       "review_rules": [],
-      "seconds": 0.06,
-      "note": "5 years"
+      "seconds": 0.03,
+      "note": "5 years",
+      "read_problems": []
     },
     {
       "doc": "FDR-T17",
@@ -380,8 +396,9 @@
       "expected_rules": [],
       "failed_rules": [],
       "review_rules": [],
-      "seconds": 0.06,
-      "note": ""
+      "seconds": 0.04,
+      "note": "",
+      "read_problems": []
     },
     {
       "doc": "FDR-T18",
@@ -393,8 +410,9 @@
       "expected_rules": [],
       "failed_rules": [],
       "review_rules": [],
-      "seconds": 0.06,
-      "note": ""
+      "seconds": 0.04,
+      "note": "",
+      "read_problems": []
     },
     {
       "doc": "FDR-T19",
@@ -410,8 +428,9 @@
         "R1"
       ],
       "review_rules": [],
-      "seconds": 0.05,
-      "note": "Drawn in favour of the college itself"
+      "seconds": 0.04,
+      "note": "Drawn in favour of the college itself",
+      "read_problems": []
     },
     {
       "doc": "FDR-T20",
@@ -427,8 +446,9 @@
         "R9"
       ],
       "review_rules": [],
-      "seconds": 0.05,
-      "note": "Receipt is internally consistent, but the bank's record shows Rs. 3,50,000"
+      "seconds": 0.04,
+      "note": "Receipt is internally consistent, but the bank's record shows Rs. 3,50,000",
+      "read_problems": []
     },
     {
       "doc": "FDR-T21",
@@ -440,8 +460,9 @@
       "expected_rules": [],
       "failed_rules": [],
       "review_rules": [],
-      "seconds": 0.06,
-      "note": ""
+      "seconds": 0.04,
+      "note": "",
+      "read_problems": []
     },
     {
       "doc": "FDR-T22",
@@ -453,8 +474,9 @@
       "expected_rules": [],
       "failed_rules": [],
       "review_rules": [],
-      "seconds": 1.65,
-      "note": ""
+      "seconds": 1.49,
+      "note": "",
+      "read_problems": []
     },
     {
       "doc": "FDR-T23",
@@ -469,8 +491,12 @@
         "R1",
         "R9"
       ],
-      "seconds": 1.54,
-      "note": ""
+      "seconds": 1.7,
+      "note": "",
+      "read_problems": [
+        "FDR number",
+        "payee (partly read)"
+      ]
     },
     {
       "doc": "FDR-T24",
@@ -489,7 +515,8 @@
         "R9"
       ],
       "seconds": 0.04,
-      "note": "NBFC, not a bank"
+      "note": "NBFC, not a bank",
+      "read_problems": []
     }
   ]
 }

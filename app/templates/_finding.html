@@ -1,0 +1,19 @@
+<article class="finding {{ r.status }}" data-rules="{{ r.rule_id }}" tabindex="0">
+  <div class="top"><h3>{% if r.status in ("FAIL","UNCERTAIN") %}{{ "Check: " if r.status=="UNCERTAIN" }}{{ r.problem if r.status=="FAIL" else r.name }}{% else %}{{ r.name }}{% endif %}</h3><span class="st st-{{ r.status }}">{{ r.ps_status }}</span></div>
+  <div class="clause">{% if r.status=="FAIL" %}Requirement: {{ r.name }}. {% endif %}{{ r.rule_id }}, {{ r.clause }}{% if not r.verified_source %}<span class="tag" title="Value taken from an older or unconfirmed source; confirm against APH 2024-27">to confirm</span>{% endif %}</div>
+  <p class="ev">{{ r.evidence }}</p>
+  <p class="why">{{ r.reasoning }}</p>
+  {% if show_fix and r.fix %}<p class="todo"><b>What to do:</b> {{ r.fix }}</p>{% endif %}
+  {% if officer and r.status in ('FAIL','UNCERTAIN') and not c.decision %}
+  <div class="officer">
+    {% if r.status == 'FAIL' %}
+      <label class="small"><input type="radio" name="v_{{ r.rule_id }}" value="agree" checked> Deficiency</label>
+      <label class="small"><input type="radio" name="v_{{ r.rule_id }}" value="disagree"> Not a deficiency</label>
+    {% else %}
+      <label class="small"><input type="radio" name="v_{{ r.rule_id }}" value="deficient"> Deficiency</label>
+      <label class="small"><input type="radio" name="v_{{ r.rule_id }}" value="agree" checked> Checked, fine</label>
+    {% endif %}
+    <input type="text" name="n_{{ r.rule_id }}" placeholder="Officer's note (required when overruling)" aria-label="Note on {{ r.name }}">
+  </div>
+  {% endif %}
+</article>

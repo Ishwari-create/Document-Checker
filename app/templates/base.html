@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{% block title %}SD Scrutiny Desk{% endblock %}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;650;700&family=Noto+Serif&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<header class="bar">
+  <a class="brand" href="{{ url_for('queue') }}">SD Scrutiny Desk<span>Security Deposit FDR checks</span></a>
+  {% set ep = request.endpoint %}
+  <nav aria-label="Main">
+    <a href="{{ url_for('queue') }}" class="{{ 'on' if ep in ('queue','check','letter') }}">Received FDRs</a>
+    <a href="{{ url_for('upload') }}" class="{{ 'on' if ep=='upload' }}">Check a receipt</a>
+    <a href="{{ url_for('precheck') }}" class="{{ 'on' if ep=='precheck' }}">Institute self-check</a>
+    <a href="{{ url_for('fool') }}" class="{{ 'on' if ep=='fool' }}">Try to fool it</a>
+    <a href="{{ url_for('evaluation') }}" class="{{ 'on' if ep=='evaluation' }}">Test results</a>
+    <a href="{{ url_for('rules') }}" class="{{ 'on' if ep=='rules' }}">Rules</a>
+    <a href="{{ url_for('audit') }}" class="{{ 'on' if ep=='audit' }}">Audit trail</a>
+  </nav>
+</header>
+<div class="synthetic">Prototype for SIH 2026 (PS SIH26261). Every institute, bank and receipt here is synthetic. Findings are advice to an officer, never a decision.</div>
+<main>{% block body %}{% endblock %}</main>
+</body>
+</html>

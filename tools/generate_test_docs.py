@@ -205,7 +205,7 @@ def render_pdf(d: dict) -> bytes:
     buf = io.BytesIO()
     layout = BANKS[d["bank_key"]]["layout"]
     size = landscape(A4) if layout == "C" else A4
-    c = canvas.Canvas(buf, pagesize=size)
+    c = canvas.Canvas(buf, pagesize=size, invariant=1)
     c.setTitle(f"FDR {d['fdr_no']} (synthetic)")
     c.setAuthor(d["bank"])
     w, h = size
@@ -352,7 +352,7 @@ def main():
     order = list(range(len(docs)))
     rng.shuffle(order)          # file numbers do not reveal which are defective
 
-    labels, confirmations = [], {}
+    labels, confirmations, specs = [], {}, {}
     for file_no, idx in enumerate(order, start=1):
         d = docs[idx]
         doc_id = f"FDR-T{file_no:02d}"
@@ -362,6 +362,7 @@ def main():
         fname = f"{doc_id}.pdf"
         (OUT / fname).write_bytes(pdf)
 
+        specs[doc_id] = {k: (v.isoformat() if isinstance(v, date) else v) for k, v in d.items()}
         expected = "PASS" if d["defect"] == "none" else "FAIL"
         labels.append({
             "doc_id": doc_id, "file": fname, "app_id": d["app_id"], "scanned": int(d["scanned"]),
@@ -393,6 +394,7 @@ def main():
         "connected_banks": ["Deccan National Bank", "Bharat Union Bank", "Konkan Commercial Bank"],
         "records": confirmations,
     }, indent=2))
+    (OUT / "specs.json").write_text(json.dumps(specs, indent=1))   # used by the "try to fool it" screen
     print(f"wrote {len(labels)} documents to {OUT}")
 
 

@@ -32,17 +32,19 @@ RULES = ["R1", "R2", "R3", "R4", "R5", "R6", "R7", "R8", "R9", "R10"]
 
 
 def main():
+    holdout = next((a.lstrip("-") for a in sys.argv if a in ("--holdout", "--holdout2")), None)
+    base = ROOT / "data" / (holdout or "test_documents")
     apps = load_applications()
-    issuer = IssuerConnector()
+    issuer = IssuerConnector(base / "bank_confirmations.json") if holdout else IssuerConnector()
     ledger = Ledger(db_path=None)              # fresh, in memory
-    labels = list(csv.DictReader(open(ROOT / "data" / "labels.csv")))
+    labels = list(csv.DictReader(open(base / "labels.csv" if holdout else ROOT / "data" / "labels.csv")))
 
     rows, tp, fp, fn, review = [], defaultdict(int), defaultdict(int), defaultdict(int), defaultdict(int)
     field_hits, field_total = defaultdict(int), defaultdict(int)
     t_all = time.time()
     for lab in labels:
         t0 = time.time()
-        pdf = (ROOT / "data" / "test_documents" / lab["file"]).read_bytes()
+        pdf = (base / lab["file"]).read_bytes()
         out = run_check(pdf, apps[lab["app_id"]], submitted_on=date.fromisoformat(lab["submitted_on"]),
                         issuer=issuer, ledger=ledger)
         secs = time.time() - t0
@@ -69,7 +71,12 @@ def main():
                      "expected_rules": sorted(truth),
                      "failed_rules": sorted([r for r, s in status.items() if s == "FAIL"], key=lambda x: int(x[1:])),
                      "review_rules": sorted([r for r, s in status.items() if s == "UNCERTAIN"], key=lambda x: int(x[1:])),
-                     "seconds": round(secs, 2), "note": lab["note"]})
+                     "seconds": round(secs, 2), "note": lab["note"],
+                     "read_problems": [k for k, g, t in [
+                         ("FDR number", f["fdr_number"], lab["true_fdr_no"]), ("amount", f["amount"], float(lab["true_amount"])),
+                         ("deposit date", f["issue_date"], lab["true_issue"]), ("maturity date", f["maturity_date"], lab["true_maturity"]),
+                         ("depositor", f["depositor_name"], lab["true_depositor"])] if g != t]
+                         + (["payee (partly read)"] if status.get("R1") == "UNCERTAIN" else [])})
 
     # --- summary numbers -------------------------------------------------------
     clean = [r for r in rows if r["truth"] == "PASS"]
@@ -107,9 +114,10 @@ def main():
 
     out_dir = ROOT / "reports"
     out_dir.mkdir(exist_ok=True)
-    (out_dir / "evaluation.json").write_text(json.dumps({"summary": summary, "per_rule": per_rule, "documents": rows},
+    stem = f"evaluation_{holdout}" if holdout else "evaluation"
+    (out_dir / f"{stem}.json").write_text(json.dumps({"summary": summary, "per_rule": per_rule, "documents": rows},
                                                         indent=2))
-    write_markdown(out_dir / "evaluation.md", summary, per_rule, rows)
+    write_markdown(out_dir / f"{stem}.md", summary, per_rule, rows)
     print(json.dumps(summary, indent=2))
     for r in rows:
         mark = "ok " if r["system"] == r["truth"] else "XX "
@@ -151,7 +159,8 @@ def write_markdown(path, s, per_rule, rows):
         L.append("No document-level errors on this set.")
     for r in wrong:
         L.append(f"- **{r['doc']}** ({'scan, ' if r['scanned'] else ''}{r['defect']}): truth {r['truth']}, "
-                 f"system {r['system']}; review flags {', '.join(r['review_rules']) or 'none'}. _Cause: see note below._")
+                 f"system {r['system']}; review flags {', '.join(r['review_rules']) or 'none'}. "
+                 f"Misread or not found: {', '.join(r['read_problems']) or 'nothing'}.")
     Path(path).write_text("\n".join(L) + "\n")
 
 

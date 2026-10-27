@@ -1,17 +1,14 @@
-# Core PDF processing
-pypdf>=3.17.0
+# Reading receipts
 pdfplumber>=0.10.0
-
-# Fuzzy string matching for Rule R5
-rapidfuzz>=3.6.0
-
-# YAML config loader
+pytesseract>=0.3.10        # needs the tesseract-ocr system package
+pdf2image>=1.16.0          # needs poppler-utils
+Pillow>=10.0.0
 PyYAML>=6.0.1
 
-# ─── A-2 Dependencies (Streamlit frontend) ───
-streamlit>=1.35.0
-pillow>=10.0.0
+# Web app
+Flask>=3.0.0
+gunicorn>=21.2.0
 
-# ─── Dev / Testing ───
+# Test data and tests
+reportlab>=4.0.0
 pytest>=8.0.0
-pytest-cov>=4.1.0

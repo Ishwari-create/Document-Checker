@@ -13,7 +13,7 @@ These are synthetic receipts from three invented bank layouts. The numbers show 
 | Defective documents passed as clean | 0 |
 | Clean documents wrongly failed (false alarms) | 0 of 10 |
 | Clean documents sent to an officer for review | 1 of 10 |
-| Time per document: digital PDF / scan | 0.05 s / 1.57 s |
+| Time per document: digital PDF / scan | 0.04 s / 1.54 s |
 
 ## Field extraction
 
@@ -73,4 +73,4 @@ A rule 'catches' a document when it returns FAIL. 'Sent to review' counts UNCERT
 
 ## Where it went wrong
 
-- **FDR-T23** (scan, none): truth PASS, system UNCERTAIN; review flags R1, R9. _Cause: see note below._
+- **FDR-T23** (scan, none): truth PASS, system UNCERTAIN; review flags R1, R9. Misread or not found: FDR number, payee (partly read).

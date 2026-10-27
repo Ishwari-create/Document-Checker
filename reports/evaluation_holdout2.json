@@ -1,0 +1,320 @@
+{
+  "summary": {
+    "documents": 8,
+    "clean": 4,
+    "defective": 4,
+    "scanned": 2,
+    "document_accuracy": 0.25,
+    "defects_caught_by_right_rule": "2/4",
+    "defective_passed_as_clean": 0,
+    "clean_wrongly_failed": 0,
+    "clean_sent_to_review": 4,
+    "false_alarm_rate_on_clean": 0.0,
+    "field_accuracy": {
+      "FDR number": "7/8",
+      "Amount": "7/8",
+      "Deposit date": "8/8",
+      "Maturity date": "0/8",
+      "Depositor": "0/8"
+    },
+    "avg_seconds_text_pdf": 0.03,
+    "avg_seconds_scan": 1.44,
+    "total_seconds": 3.1
+  },
+  "per_rule": [
+    {
+      "rule": "R1",
+      "planted": 1,
+      "caught": 0,
+      "false_flags": 0,
+      "sent_to_review": 8,
+      "precision": null,
+      "recall": 0.0
+    },
+    {
+      "rule": "R2",
+      "planted": 0,
+      "caught": 0,
+      "false_flags": 0,
+      "sent_to_review": 1,
+      "precision": null,
+      "recall": null
+    },
+    {
+      "rule": "R3",
+      "planted": 1,
+      "caught": 1,
+      "false_flags": 0,
+      "sent_to_review": 7,
+      "precision": 1.0,
+      "recall": 1.0
+    },
+    {
+      "rule": "R4",
+      "planted": 1,
+      "caught": 1,
+      "false_flags": 0,
+      "sent_to_review": 1,
+      "precision": 1.0,
+      "recall": 1.0
+    },
+    {
+      "rule": "R5",
+      "planted": 1,
+      "caught": 0,
+      "false_flags": 0,
+      "sent_to_review": 8,
+      "precision": null,
+      "recall": 0.0
+    },
+    {
+      "rule": "R6",
+      "planted": 0,
+      "caught": 0,
+      "false_flags": 0,
+      "sent_to_review": 8,
+      "precision": null,
+      "recall": null
+    },
+    {
+      "rule": "R7",
+      "planted": 0,
+      "caught": 0,
+      "false_flags": 0,
+      "sent_to_review": 0,
+      "precision": null,
+      "recall": null
+    },
+    {
+      "rule": "R8",
+      "planted": 0,
+      "caught": 0,
+      "false_flags": 0,
+      "sent_to_review": 1,
+      "precision": null,
+      "recall": null
+    },
+    {
+      "rule": "R9",
+      "planted": 0,
+      "caught": 0,
+      "false_flags": 0,
+      "sent_to_review": 2,
+      "precision": null,
+      "recall": null
+    },
+    {
+      "rule": "R10",
+      "planted": 0,
+      "caught": 0,
+      "false_flags": 0,
+      "sent_to_review": 0,
+      "precision": null,
+      "recall": null
+    }
+  ],
+  "documents": [
+    {
+      "doc": "FDR-J01",
+      "scanned": false,
+      "layout": "H",
+      "defect": "none",
+      "truth": "PASS",
+      "system": "UNCERTAIN",
+      "expected_rules": [],
+      "failed_rules": [],
+      "review_rules": [
+        "R1",
+        "R3",
+        "R5",
+        "R6"
+      ],
+      "seconds": 0.04,
+      "note": "held-out layout",
+      "read_problems": [
+        "maturity date",
+        "depositor",
+        "payee (partly read)"
+      ]
+    },
+    {
+      "doc": "FDR-J02",
+      "scanned": true,
+      "layout": "H",
+      "defect": "none",
+      "truth": "PASS",
+      "system": "UNCERTAIN",
+      "expected_rules": [],
+      "failed_rules": [],
+      "review_rules": [
+        "R1",
+        "R3",
+        "R4",
+        "R5",
+        "R6",
+        "R8",
+        "R9"
+      ],
+      "seconds": 1.49,
+      "note": "held-out layout",
+      "read_problems": [
+        "amount",
+        "maturity date",
+        "depositor",
+        "payee (partly read)"
+      ]
+    },
+    {
+      "doc": "FDR-J03",
+      "scanned": false,
+      "layout": "H",
+      "defect": "none",
+      "truth": "PASS",
+      "system": "UNCERTAIN",
+      "expected_rules": [],
+      "failed_rules": [],
+      "review_rules": [
+        "R1",
+        "R3",
+        "R5",
+        "R6"
+      ],
+      "seconds": 0.03,
+      "note": "held-out layout",
+      "read_problems": [
+        "maturity date",
+        "depositor",
+        "payee (partly read)"
+      ]
+    },
+    {
+      "doc": "FDR-J04",
+      "scanned": false,
+      "layout": "H",
+      "defect": "none",
+      "truth": "PASS",
+      "system": "UNCERTAIN",
+      "expected_rules": [],
+      "failed_rules": [],
+      "review_rules": [
+        "R1",
+        "R3",
+        "R5",
+        "R6"
+      ],
+      "seconds": 0.03,
+      "note": "held-out layout",
+      "read_problems": [
+        "maturity date",
+        "depositor",
+        "payee (partly read)"
+      ]
+    },
+    {
+      "doc": "FDR-J05",
+      "scanned": false,
+      "layout": "H",
+      "defect": "short_tenure",
+      "truth": "FAIL",
+      "system": "FAIL",
+      "expected_rules": [
+        "R3"
+      ],
+      "failed_rules": [
+        "R3"
+      ],
+      "review_rules": [
+        "R1",
+        "R5",
+        "R6"
+      ],
+      "seconds": 0.04,
+      "note": "held-out layout",
+      "read_problems": [
+        "maturity date",
+        "depositor",
+        "payee (partly read)"
+      ]
+    },
+    {
+      "doc": "FDR-J06",
+      "scanned": true,
+      "layout": "H",
+      "defect": "wrong_beneficiary",
+      "truth": "FAIL",
+      "system": "UNCERTAIN",
+      "expected_rules": [
+        "R1"
+      ],
+      "failed_rules": [],
+      "review_rules": [
+        "R1",
+        "R2",
+        "R3",
+        "R5",
+        "R6",
+        "R9"
+      ],
+      "seconds": 1.39,
+      "note": "held-out layout",
+      "read_problems": [
+        "FDR number",
+        "maturity date",
+        "depositor",
+        "payee (partly read)"
+      ]
+    },
+    {
+      "doc": "FDR-J07",
+      "scanned": false,
+      "layout": "H",
+      "defect": "short_amount",
+      "truth": "FAIL",
+      "system": "FAIL",
+      "expected_rules": [
+        "R4"
+      ],
+      "failed_rules": [
+        "R4"
+      ],
+      "review_rules": [
+        "R1",
+        "R3",
+        "R5",
+        "R6"
+      ],
+      "seconds": 0.03,
+      "note": "held-out layout",
+      "read_problems": [
+        "maturity date",
+        "depositor",
+        "payee (partly read)"
+      ]
+    },
+    {
+      "doc": "FDR-J08",
+      "scanned": false,
+      "layout": "H",
+      "defect": "name_mismatch",
+      "truth": "FAIL",
+      "system": "UNCERTAIN",
+      "expected_rules": [
+        "R5"
+      ],
+      "failed_rules": [],
+      "review_rules": [
+        "R1",
+        "R3",
+        "R5",
+        "R6"
+      ],
+      "seconds": 0.03,
+      "note": "held-out layout",
+      "read_problems": [
+        "maturity date",
+        "depositor",
+        "payee (partly read)"
+      ]
+    }
+  ]
+}

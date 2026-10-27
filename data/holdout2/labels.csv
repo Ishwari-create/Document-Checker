@@ -1,0 +1,9 @@
+doc_id,file,app_id,scanned,layout,defect_type,expected_fail_rules,expected_overall,submitted_on,note,true_fdr_no,true_amount,true_issue,true_maturity,true_depositor
+FDR-J01,FDR-J01.pdf,1-SYN-2026-0103,0,H,none,,PASS,2026-05-03,held-out layout,311486309292,1500000,2026-04-30,2036-04-30,Godavari Institute of Management Studies
+FDR-J02,FDR-J02.pdf,1-SYN-2026-0105,1,H,none,,PASS,2026-05-04,held-out layout,713978646760,5000000,2026-05-01,2036-05-01,Vindhya Institute of Technology and Management
+FDR-J03,FDR-J03.pdf,1-SYN-2026-0106,0,H,none,,PASS,2026-05-12,held-out layout,793877267600,1200000,2026-05-09,2036-05-09,Brahmaputra School of Architecture
+FDR-J04,FDR-J04.pdf,1-SYN-2026-0109,0,H,none,,PASS,2026-05-01,held-out layout,131267106234,3500000,2026-04-28,2036-04-28,Shivalik College of Engineering
+FDR-J05,FDR-J05.pdf,1-SYN-2026-0110,0,H,short_tenure,R3,FAIL,2026-05-05,held-out layout,309651764475,1500000,2026-05-02,2033-05-02,Chilika Institute of Pharmaceutical Sciences
+FDR-J06,FDR-J06.pdf,1-SYN-2026-0101,1,H,wrong_beneficiary,R1,FAIL,2026-04-30,held-out layout,453611052967,3500000,2026-04-27,2036-04-27,Sahyadri Institute of Engineering and Research
+FDR-J07,FDR-J07.pdf,1-SYN-2026-0111,0,H,short_amount,R4,FAIL,2026-05-12,held-out layout,386812414916,1200000,2026-05-09,2036-05-09,Aravalli Business School
+FDR-J08,FDR-J08.pdf,1-SYN-2026-0104,0,H,name_mismatch,R5,FAIL,2026-04-28,held-out layout,311422335026,2800000,2026-04-25,2036-04-25,Konark Agro Industries

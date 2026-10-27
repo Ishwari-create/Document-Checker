@@ -145,6 +145,7 @@ def _v(cfg: dict, status: str, evidence: str, reasoning: str, fields: List[str] 
                   "NA": "Not applicable", "EXEMPT": "Not applicable"}[status]
     return {
         "rule_id": cfg["id"], "name": cfg["name"], "clause": cfg.get("clause", ""),
+        "problem": cfg.get("problem", cfg["name"]),
         "severity": severity or cfg.get("severity", "FATAL"), "status": status,
         "ps_status": ps_status or default_ps,
         "evidence": evidence, "reasoning": reasoning,

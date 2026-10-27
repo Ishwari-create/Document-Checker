@@ -43,7 +43,7 @@ def generate_deficiency_letter(fields: Dict[str, Any], rule_results: List[Dict[s
     if not items:
         L += ["  No deficiency has been confirmed.", ""]
     for i, r in enumerate(items, 1):
-        L += [f"  {i}. {r['name']}  [{r['rule_id']}; {r['clause']}]",
+        L += [f"  {i}. {r.get('problem') or r['name']}  [{r['rule_id']}; {r['clause']}]",
               f"     Found: {r['evidence']}",
               f"     Required action: {r.get('fix') or r.get('reasoning', '')}", ""]
     L += ["Please submit the rectified FDR (original to the Regional Office, scanned copy on the portal) "

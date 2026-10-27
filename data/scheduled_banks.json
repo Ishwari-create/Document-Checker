@@ -1,5 +1,5 @@
 {
-  "description": "List of Nationalised and Scheduled Commercial Banks recognized by RBI and AICTE Approval Process Handbook",
+  "description": "Banks accepted for AICTE Security Deposit FDRs: public sector (nationalised) and scheduled commercial banks under the RBI Act Second Schedule. Partial list for the prototype; production should sync with the RBI list.",
   "banks": [
     "State Bank of India",
     "Punjab National Bank",
@@ -40,5 +40,13 @@
     "icici": "ICICI Bank",
     "axis": "Axis Bank",
     "kotak": "Kotak Mahindra Bank"
+  },
+  "synthetic_demo_banks": {
+    "_note": "FICTIONAL banks used only in the synthetic test documents. Treated as scheduled commercial banks in demo mode. Remove in production.",
+    "banks": [
+      "Deccan National Bank",
+      "Bharat Union Bank",
+      "Konkan Commercial Bank"
+    ]
   }
 }

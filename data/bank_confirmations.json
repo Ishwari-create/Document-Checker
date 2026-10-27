@@ -1,0 +1,186 @@
+{
+  "_note": "SYNTHETIC records standing in for a bank FDR-confirmation service. Only Deccan National, Bharat Union and Konkan Commercial are 'connected'.",
+  "connected_banks": [
+    "Deccan National Bank",
+    "Bharat Union Bank",
+    "Konkan Commercial Bank"
+  ],
+  "records": {
+    "BU352026001272": {
+      "bank": "Bharat Union Bank",
+      "amount": 1500000.0,
+      "issue_date": "2026-05-12",
+      "maturity_date": "2036-05-12",
+      "depositor_name": "Aravalli Business School",
+      "lien": "Secretary, Aravalli Shiksha Nyas"
+    },
+    "KO192026001758": {
+      "bank": "Konkan Commercial Bank",
+      "amount": 3500000.0,
+      "issue_date": "2026-05-04",
+      "maturity_date": "2036-05-04",
+      "depositor_name": "Vindhya Institute of Technology and Management",
+      "lien": "Member Secretary, AICTE"
+    },
+    "DN712026002189": {
+      "bank": "Deccan National Bank",
+      "amount": 1500000.0,
+      "issue_date": "2026-06-15",
+      "maturity_date": "2036-06-15",
+      "depositor_name": "Godavari Institute of Management Studies",
+      "lien": "Member Secretary, AICTE"
+    },
+    "KO272026002238": {
+      "bank": "Konkan Commercial Bank",
+      "amount": 3500000.0,
+      "issue_date": "2014-06-12",
+      "maturity_date": "2024-06-12",
+      "depositor_name": "Pench Valley Institute of Technology",
+      "lien": "Member Secretary, AICTE"
+    },
+    "BU982026002018": {
+      "bank": "Bharat Union Bank",
+      "amount": 1500000.0,
+      "issue_date": "2026-04-29",
+      "maturity_date": "2036-04-29",
+      "depositor_name": "Mahanadi Institute of Pharmacy",
+      "lien": "Member Secretary, AICTE"
+    },
+    "DN892026001090": {
+      "bank": "Deccan National Bank",
+      "amount": 1500000.0,
+      "issue_date": "2026-05-01",
+      "maturity_date": "2036-05-01",
+      "depositor_name": "Chilika Institute of Pharmaceutical Sciences",
+      "lien": "Member Secretary, AICTE"
+    },
+    "BU712026002316": {
+      "bank": "Bharat Union Bank",
+      "amount": 2500000.0,
+      "issue_date": "2026-04-26",
+      "maturity_date": "2036-04-26",
+      "depositor_name": "Sahyadri Institute of Engineering and Research",
+      "lien": "Member Secretary, AICTE"
+    },
+    "DN872026000133": {
+      "bank": "Deccan National Bank",
+      "amount": 3500000.0,
+      "issue_date": "2026-04-26",
+      "maturity_date": "2036-04-26",
+      "depositor_name": "Sahyadri Institute of Engineering and Research",
+      "lien": "Member Secretary, AICTE"
+    },
+    "DN442026001960": {
+      "bank": "Deccan National Bank",
+      "amount": 1500000.0,
+      "issue_date": "2026-05-08",
+      "maturity_date": "2036-05-08",
+      "depositor_name": "Sai Krupa Hospitality Services Pvt. Ltd.",
+      "lien": "Member Secretary, AICTE"
+    },
+    "KO362026000944": {
+      "bank": "Konkan Commercial Bank",
+      "amount": 3500000.0,
+      "issue_date": "2026-04-28",
+      "maturity_date": "2036-04-28",
+      "depositor_name": "Shivalik College of Engg.",
+      "lien": "Member Secretary, AICTE"
+    },
+    "BU102026001866": {
+      "bank": "Bharat Union Bank",
+      "amount": 2500000.0,
+      "issue_date": "2026-04-22",
+      "maturity_date": "2036-04-22",
+      "depositor_name": "Kaveri Women's College of Engineering",
+      "lien": "Member Secretary, AICTE"
+    },
+    "KO612026001574": {
+      "bank": "Konkan Commercial Bank",
+      "amount": 1500000.0,
+      "issue_date": "2026-04-25",
+      "maturity_date": "2034-04-25",
+      "depositor_name": "Narmada College of Pharmacy",
+      "lien": "Member Secretary, AICTE"
+    },
+    "BU872026000560": {
+      "bank": "Bharat Union Bank",
+      "amount": 5000000.0,
+      "issue_date": "2026-05-05",
+      "maturity_date": "2036-05-05",
+      "depositor_name": "Vindhya Institute of Technology and Management",
+      "lien": "Member Secretary, AICTE"
+    },
+    "KO482026000613": {
+      "bank": "Konkan Commercial Bank",
+      "amount": 1200000.0,
+      "issue_date": "2026-05-07",
+      "maturity_date": "2036-05-07",
+      "depositor_name": "Brahmaputra Kala Nyas",
+      "lien": "Member Secretary, AICTE"
+    },
+    "DN192026001655": {
+      "bank": "Deccan National Bank",
+      "amount": 1200000.0,
+      "issue_date": "2026-05-09",
+      "maturity_date": "2031-05-09",
+      "depositor_name": "Brahmaputra School of Architecture",
+      "lien": "Member Secretary, AICTE"
+    },
+    "DN452026000491": {
+      "bank": "Deccan National Bank",
+      "amount": 2800000.0,
+      "issue_date": "2026-04-23",
+      "maturity_date": "2036-04-23",
+      "depositor_name": "Kaveri Women's College of Engineering",
+      "lien": "Member Secretary, AICTE"
+    },
+    "BU872026000257": {
+      "bank": "Bharat Union Bank",
+      "amount": 1500000.0,
+      "issue_date": "2026-04-26",
+      "maturity_date": "2036-04-26",
+      "depositor_name": "Narmada Education Trust",
+      "lien": "Member Secretary, AICTE"
+    },
+    "DN872026001156": {
+      "bank": "Deccan National Bank",
+      "amount": 3500000.0,
+      "issue_date": "2026-04-27",
+      "maturity_date": "2036-04-27",
+      "depositor_name": "Shivalik College of Engineering",
+      "lien": "The Principal, Shivalik College of Engineering"
+    },
+    "DN452026002447": {
+      "bank": "Deccan National Bank",
+      "amount": 350000.0,
+      "issue_date": "2026-04-25",
+      "maturity_date": "2036-04-25",
+      "depositor_name": "Shivalik College of Engineering",
+      "lien": "Member Secretary, AICTE"
+    },
+    "BU682026000898": {
+      "bank": "Bharat Union Bank",
+      "amount": 1500000.0,
+      "issue_date": "2026-05-09",
+      "maturity_date": "2036-05-09",
+      "depositor_name": "Tapti Institute of Hotel Management",
+      "lien": "Member Secretary, AICTE"
+    },
+    "DN532026000715": {
+      "bank": "Deccan National Bank",
+      "amount": 1500000.0,
+      "issue_date": "2026-05-07",
+      "maturity_date": "2036-05-07",
+      "depositor_name": "Malwa College of Computer Applications",
+      "lien": "Member Secretary, AICTE"
+    },
+    "KO132026000382": {
+      "bank": "Konkan Commercial Bank",
+      "amount": 1500000.0,
+      "issue_date": "2026-04-30",
+      "maturity_date": "2036-04-30",
+      "depositor_name": "Godavari Institute of Management Studies",
+      "lien": "Member Secretary, AICTE"
+    }
+  }
+}

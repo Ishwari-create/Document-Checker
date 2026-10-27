@@ -1,270 +1,184 @@
 """
-Test Suite for AICTE Rule Engine (A-1)
-Tests all 7 rules with pass, fail, and uncertain scenarios.
-Run with: pytest tests/ -v
+Unit tests: one PASS and one FAIL (or UNCERTAIN) case per rule, plus the
+extractor helpers and the end-to-end pipeline on two generated documents.
+
+    pytest -q
 """
 
 import sys
+from datetime import date
 from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import pytest
-from src.rule_engine import check_document, get_overall_verdict
-from src.deficiency import generate_deficiency_letter, get_deficiency_summary
+
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
+
+from src.extractor import parse_amount, parse_date, words_to_number          # noqa: E402
+from src.registry import IssuerConnector, Ledger                              # noqa: E402
+from src.rule_engine import check_document, get_overall_verdict, name_similarity  # noqa: E402
+from src.deficiency import generate_deficiency_letter                         # noqa: E402
+
+SUB = date(2026, 5, 1)
 
 
-# ─────────────────────────────────────────────────────────────
-# Fixtures
-# ─────────────────────────────────────────────────────────────
 @pytest.fixture
-def good_fields():
+def fields():
     return {
-        "fdr_number": "FDR-2026-98172",
-        "bank_name": "State Bank of India",
-        "branch": "New Delhi Main Branch (SBIN0000691)",
-        "institute_name": "Apex Institute of Technology",
-        "beneficiary_name": "Member Secretary, AICTE",
-        "amount": 1500000.0,
-        "issue_date": "2026-05-10",
-        "maturity_date": "2034-05-10",
-        "tenure_years": 8.0,
-        "auto_renew": True,
+        "fdr_number": "XX1234567890", "bank_name": "State Bank of India",
+        "depositor_name": "Apex Institute of Technology", "beneficiary_name": "Member Secretary, AICTE",
+        "amount": 3500000.0, "amount_words": "Rupees Thirty Five Lakh Only", "amount_in_words_value": 3500000.0,
+        "issue_date": "2026-04-25", "maturity_date": "2036-04-25", "tenure_text": "120 Months",
     }
 
 
 @pytest.fixture
-def good_context():
-    return {
-        "institute_name": "Apex Institute of Technology",
-        "category": "Technical",
-        "required_amount": 1500000.0
-    }
+def app():
+    return {"app_id": "A1", "institute_name": "Apex Institute of Technology", "trust": "Apex Education Trust",
+            "institution_type": "Private Self-Financing", "special_category": False,
+            "programmes": ["Engineering & Technology"], "loa_date": "2026-04-20"}
 
 
-# ─────────────────────────────────────────────────────────────
-# R1: Beneficiary
-# ─────────────────────────────────────────────────────────────
-class TestR1Beneficiary:
-    def test_r1_pass(self, good_fields, good_context):
-        results = check_document(good_fields, good_context)
-        r1 = next(r for r in results if r["rule_id"] == "R1")
-        assert r1["status"] == "PASS", f"Expected PASS, got {r1['status']}: {r1['reasoning']}"
-
-    def test_r1_fail_wrong_beneficiary(self, good_fields, good_context):
-        bad = {**good_fields, "beneficiary_name": "Principal, ABC College"}
-        results = check_document(bad, good_context)
-        r1 = next(r for r in results if r["rule_id"] == "R1")
-        assert r1["status"] == "FAIL"
-
-    def test_r1_uncertain_only_aicte(self, good_fields, good_context):
-        uncertain = {**good_fields, "beneficiary_name": "AICTE, New Delhi"}
-        results = check_document(uncertain, good_context)
-        r1 = next(r for r in results if r["rule_id"] == "R1")
-        assert r1["status"] in ("UNCERTAIN", "PASS")
-
-    def test_r1_uncertain_missing_field(self, good_fields, good_context):
-        missing = {**good_fields, "beneficiary_name": None}
-        results = check_document(missing, good_context)
-        r1 = next(r for r in results if r["rule_id"] == "R1")
-        assert r1["status"] == "UNCERTAIN"
+def run(fields, app, **kw):
+    res = check_document(fields, app, submitted_on=kw.pop("sub", SUB), **kw)
+    return {r["rule_id"]: r for r in res}, get_overall_verdict(res)
 
 
-# ─────────────────────────────────────────────────────────────
-# R2: Approved Bank
-# ─────────────────────────────────────────────────────────────
-class TestR2Bank:
-    def test_r2_pass_nationalised(self, good_fields, good_context):
-        results = check_document(good_fields, good_context)
-        r2 = next(r for r in results if r["rule_id"] == "R2")
-        assert r2["status"] == "PASS"
-
-    def test_r2_pass_private_scheduled(self, good_fields, good_context):
-        hdfc = {**good_fields, "bank_name": "HDFC Bank"}
-        results = check_document(hdfc, good_context)
-        r2 = next(r for r in results if r["rule_id"] == "R2")
-        assert r2["status"] == "PASS"
-
-    def test_r2_fail_unknown_bank(self, good_fields, good_context):
-        bad = {**good_fields, "bank_name": "Fake Rural Cooperative Bank"}
-        results = check_document(bad, good_context)
-        r2 = next(r for r in results if r["rule_id"] == "R2")
-        assert r2["status"] in ("FAIL", "UNCERTAIN")
-
-    def test_r2_uncertain_missing(self, good_fields, good_context):
-        missing = {**good_fields, "bank_name": None}
-        results = check_document(missing, good_context)
-        r2 = next(r for r in results if r["rule_id"] == "R2")
-        assert r2["status"] == "UNCERTAIN"
+def test_clean_document_passes(fields, app):
+    r, overall = run(fields, app)
+    assert overall == "PASS", {k: (v["status"], v["reasoning"]) for k, v in r.items() if v["status"] != "PASS"}
 
 
-# ─────────────────────────────────────────────────────────────
-# R3: Tenure
-# ─────────────────────────────────────────────────────────────
-class TestR3Tenure:
-    def test_r3_pass_exactly_8_years(self, good_fields, good_context):
-        results = check_document(good_fields, good_context)
-        r3 = next(r for r in results if r["rule_id"] == "R3")
-        assert r3["status"] == "PASS"
-
-    def test_r3_pass_more_than_8_years(self, good_fields, good_context):
-        extended = {**good_fields, "issue_date": "2020-01-01", "maturity_date": "2030-01-01", "tenure_years": 10.0}
-        results = check_document(extended, good_context)
-        r3 = next(r for r in results if r["rule_id"] == "R3")
-        assert r3["status"] == "PASS"
-
-    def test_r3_fail_short_tenure(self, good_fields, good_context):
-        short = {**good_fields, "issue_date": "2024-01-01", "maturity_date": "2028-01-01", "tenure_years": 4.0}
-        results = check_document(short, good_context)
-        r3 = next(r for r in results if r["rule_id"] == "R3")
-        assert r3["status"] == "FAIL"
-
-    def test_r3_uncertain_no_dates(self, good_fields, good_context):
-        no_dates = {**good_fields, "issue_date": None, "maturity_date": None, "tenure_years": None}
-        results = check_document(no_dates, good_context)
-        r3 = next(r for r in results if r["rule_id"] == "R3")
-        assert r3["status"] == "UNCERTAIN"
+def test_government_institution_is_exempt(fields, app):
+    _, overall = run(fields, {**app, "institution_type": "Government"})
+    assert overall == "EXEMPT"
 
 
-# ─────────────────────────────────────────────────────────────
-# R4: Amount
-# ─────────────────────────────────────────────────────────────
-class TestR4Amount:
-    def test_r4_pass_exact_amount(self, good_fields, good_context):
-        results = check_document(good_fields, good_context)
-        r4 = next(r for r in results if r["rule_id"] == "R4")
-        assert r4["status"] == "PASS"
-
-    def test_r4_pass_above_threshold(self, good_fields, good_context):
-        rich = {**good_fields, "amount": 2000000.0}
-        results = check_document(rich, good_context)
-        r4 = next(r for r in results if r["rule_id"] == "R4")
-        assert r4["status"] == "PASS"
-
-    def test_r4_fail_below_threshold(self, good_fields, good_context):
-        poor = {**good_fields, "amount": 500000.0}
-        results = check_document(poor, good_context)
-        r4 = next(r for r in results if r["rule_id"] == "R4")
-        assert r4["status"] == "FAIL"
-
-    def test_r4_uncertain_no_amount(self, good_fields, good_context):
-        no_amt = {**good_fields, "amount": None}
-        results = check_document(no_amt, good_context)
-        r4 = next(r for r in results if r["rule_id"] == "R4")
-        assert r4["status"] == "UNCERTAIN"
+# R1 ---------------------------------------------------------------------------
+@pytest.mark.parametrize("ben,expected", [
+    ("Member Secretary, All India Council for Technical Education", "PASS"),
+    ("Member Secretary AICTE jointly with Apex Education Trust", "PASS"),
+    ("The Principal, Apex Institute of Technology", "FAIL"),
+    ("Member Secy, AICTE", "UNCERTAIN"),
+    (None, "UNCERTAIN"),
+])
+def test_r1(fields, app, ben, expected):
+    assert run({**fields, "beneficiary_name": ben}, app)[0]["R1"]["status"] == expected
 
 
-# ─────────────────────────────────────────────────────────────
-# R5: Institute Name Match
-# ─────────────────────────────────────────────────────────────
-class TestR5InstituteMatch:
-    def test_r5_pass_exact_match(self, good_fields, good_context):
-        results = check_document(good_fields, good_context)
-        r5 = next(r for r in results if r["rule_id"] == "R5")
-        assert r5["status"] == "PASS"
-
-    def test_r5_pass_minor_typo(self, good_fields, good_context):
-        typo = {**good_fields, "institute_name": "Apex Institute Of Technology"}
-        results = check_document(typo, good_context)
-        r5 = next(r for r in results if r["rule_id"] == "R5")
-        assert r5["status"] == "PASS"
-
-    def test_r5_fail_different_name(self, good_fields, good_context):
-        wrong = {**good_fields, "institute_name": "Shri Ram College of Commerce"}
-        results = check_document(wrong, good_context)
-        r5 = next(r for r in results if r["rule_id"] == "R5")
-        assert r5["status"] in ("FAIL", "UNCERTAIN")
-
-    def test_r5_uncertain_missing_field(self, good_fields, good_context):
-        missing = {**good_fields, "institute_name": None}
-        results = check_document(missing, good_context)
-        r5 = next(r for r in results if r["rule_id"] == "R5")
-        assert r5["status"] == "UNCERTAIN"
+# R2 ---------------------------------------------------------------------------
+@pytest.mark.parametrize("bank,expected", [
+    ("State Bank of India", "PASS"), ("Central Bank of India", "PASS"), ("HDFC Bank Ltd.", "PASS"),
+    ("Shree Ganesh Sahakari Bank (Co-operative)", "FAIL"), ("Sunrise Finance & Investments Ltd.", "FAIL"),
+    ("Bank of Indla", "PASS"),                      # OCR error still recognised
+    ("Some Unknown Bank", "UNCERTAIN"),
+])
+def test_r2(fields, app, bank, expected):
+    assert run({**fields, "bank_name": bank}, app)[0]["R2"]["status"] == expected
 
 
-# ─────────────────────────────────────────────────────────────
-# R6: Date Logic
-# ─────────────────────────────────────────────────────────────
-class TestR6DateLogic:
-    def test_r6_pass_valid_dates(self, good_fields, good_context):
-        results = check_document(good_fields, good_context)
-        r6 = next(r for r in results if r["rule_id"] == "R6")
-        assert r6["status"] == "PASS"
-
-    def test_r6_fail_future_issue_date(self, good_fields, good_context):
-        future = {**good_fields, "issue_date": "2099-01-01", "maturity_date": "2107-01-01"}
-        results = check_document(future, good_context)
-        r6 = next(r for r in results if r["rule_id"] == "R6")
-        assert r6["status"] == "FAIL"
-
-    def test_r6_fail_already_matured(self, good_fields, good_context):
-        matured = {**good_fields, "issue_date": "2010-01-01", "maturity_date": "2018-01-01"}
-        results = check_document(matured, good_context)
-        r6 = next(r for r in results if r["rule_id"] == "R6")
-        assert r6["status"] == "FAIL"
-
-    def test_r6_uncertain_no_dates(self, good_fields, good_context):
-        no_date = {**good_fields, "issue_date": None, "maturity_date": None}
-        results = check_document(no_date, good_context)
-        r6 = next(r for r in results if r["rule_id"] == "R6")
-        assert r6["status"] == "UNCERTAIN"
+# R3 ---------------------------------------------------------------------------
+def test_r3_eight_years_is_short(fields, app):
+    assert run({**fields, "maturity_date": "2034-04-25"}, app)[0]["R3"]["status"] == "FAIL"
 
 
-# ─────────────────────────────────────────────────────────────
-# R7: Document Integrity
-# ─────────────────────────────────────────────────────────────
-class TestR7Integrity:
-    def test_r7_pass_clean_text(self, good_fields, good_context):
-        results = check_document(good_fields, good_context, raw_text="Normal FDR document text. " * 20)
-        r7 = next(r for r in results if r["rule_id"] == "R7")
-        assert r7["status"] == "PASS"
-
-    def test_r7_uncertain_void_stamp(self, good_fields, good_context):
-        results = check_document(good_fields, good_context, raw_text="VOID - SAMPLE DOCUMENT FOR TESTING")
-        r7 = next(r for r in results if r["rule_id"] == "R7")
-        assert r7["status"] == "UNCERTAIN"
-
-    def test_r7_uncertain_empty_text(self, good_fields, good_context):
-        results = check_document(good_fields, good_context, raw_text="")
-        r7 = next(r for r in results if r["rule_id"] == "R7")
-        assert r7["status"] == "UNCERTAIN"
+def test_r3_uses_printed_period_when_dates_missing(fields, app):
+    r = run({**fields, "issue_date": None, "maturity_date": None, "tenure_text": "60 Months"}, app)[0]
+    assert r["R3"]["status"] == "FAIL"
 
 
-# ─────────────────────────────────────────────────────────────
-# Overall Verdict
-# ─────────────────────────────────────────────────────────────
-class TestOverallVerdict:
-    def test_all_pass(self, good_fields, good_context):
-        results = check_document(good_fields, good_context, raw_text="Normal FDR text. " * 20)
-        verdict = get_overall_verdict(results)
-        assert verdict == "PASS"
-
-    def test_fail_on_fatal_fail(self, good_fields, good_context):
-        bad = {**good_fields, "amount": 100.0}
-        results = check_document(bad, good_context, raw_text="Normal FDR text. " * 20)
-        verdict = get_overall_verdict(results)
-        assert verdict == "FAIL"
-
-    def test_uncertain_on_missing_data(self, good_fields, good_context):
-        missing = {**good_fields, "beneficiary_name": None}
-        results = check_document(missing, good_context, raw_text="Normal FDR text. " * 20)
-        verdict = get_overall_verdict(results)
-        assert verdict in ("UNCERTAIN", "FAIL")
+# R4 ---------------------------------------------------------------------------
+def test_r4_sums_programmes(fields, app):
+    two = {**app, "programmes": ["Engineering & Technology", "Management"]}
+    r = run(fields, two)[0]["R4"]
+    assert r["status"] == "FAIL" and "15,00,000" in r["reasoning"]
 
 
-# ─────────────────────────────────────────────────────────────
-# Deficiency Letter
-# ─────────────────────────────────────────────────────────────
-class TestDeficiencyLetter:
-    def test_letter_generated_on_fail(self, good_fields, good_context):
-        bad_fields = {**good_fields, "amount": 100.0, "beneficiary_name": "Principal, XYZ College"}
-        results = check_document(bad_fields, good_context)
-        letter = generate_deficiency_letter(bad_fields, results, good_context)
-        assert "DEFICIENCY" in letter.upper()
-        assert "AICTE" in letter
-        assert len(letter) > 200
+def test_r4_special_category_slab(fields, app):
+    r = run({**fields, "amount": 2800000.0, "amount_in_words_value": 2800000.0},
+            {**app, "special_category": True})[0]
+    assert r["R4"]["status"] == "PASS"
 
-    def test_summary_dict(self, good_fields, good_context):
-        results = check_document(good_fields, good_context, raw_text="Normal text " * 20)
-        summary = get_deficiency_summary(results)
-        assert "overall" in summary
-        assert summary["total_rules"] == 7
+
+# R5 ---------------------------------------------------------------------------
+@pytest.mark.parametrize("dep,expected", [
+    ("Apex Institute of Technology", "PASS"), ("Apex Inst. of Tech.", "PASS"),
+    ("Apex Education Trust", "PASS"), ("Sai Krupa Hospitality Services Pvt. Ltd.", "FAIL"),
+])
+def test_r5(fields, app, dep, expected):
+    assert run({**fields, "depositor_name": dep}, app)[0]["R5"]["status"] == expected
+
+
+def test_name_similarity_not_fooled_by_subset():
+    assert name_similarity("College", "Apex College of Engineering") < 70
+
+
+# R6 ---------------------------------------------------------------------------
+def test_r6_post_dated(fields, app):
+    assert run({**fields, "issue_date": "2026-06-30", "maturity_date": "2036-06-30"}, app)[0]["R6"]["status"] == "FAIL"
+
+
+def test_r6_already_matured(fields, app):
+    r = run({**fields, "issue_date": "2014-06-12", "maturity_date": "2024-06-12"}, app)[0]["R6"]
+    assert r["status"] == "FAIL" and r["ps_status"] == "Expired"
+
+
+# R7 ---------------------------------------------------------------------------
+def test_r7_late_submission_penalty(fields, app):
+    r = run(fields, app, sub=date(2026, 5, 20))[0]["R7"]
+    assert r["status"] == "FAIL" and "10%" in r["reasoning"] and r["severity"] == "WARNING"
+
+
+def test_r7_after_july_is_fatal(fields, app):
+    r = run(fields, app, sub=date(2026, 8, 5))[0]["R7"]
+    assert r["status"] == "FAIL" and r["severity"] == "FATAL"
+
+
+# R8 ---------------------------------------------------------------------------
+def test_r8_figures_vs_words(fields, app):
+    r = run({**fields, "amount_in_words_value": 2500000.0}, app)[0]["R8"]
+    assert r["status"] == "FAIL"
+
+
+# R9 / R10 ------------------------------------------------------------------------
+def test_r9_source_unavailable_goes_to_review(fields, app):
+    r = run(fields, app, issuer=IssuerConnector())[0]["R9"]
+    assert r["status"] == "UNCERTAIN" and r["ps_status"] == "Source unavailable"
+
+
+def test_r10_same_fdr_in_two_applications(fields, app):
+    led = Ledger(db_path=None)
+    led.record_submission("OTHER-APP", fields["fdr_number"], fields["bank_name"], "abc")
+    r = run(fields, app, ledger=led, sha256="def")[0]["R10"]
+    assert r["status"] == "FAIL" and "OTHER-APP" in r["evidence"]
+
+
+# Helpers -------------------------------------------------------------------------
+def test_parsers():
+    assert parse_amount("Rs. 35,00,000.00") == 3500000.0
+    assert parse_date("Opened on: 04-May-2026") == "2026-05-04"
+    assert parse_date("Date of Deposit : 15/06/2026") == "2026-06-15"
+    assert words_to_number("Rupees Twelve Lakh Fifty Thousand Only") == 1250000
+    assert words_to_number("Rupees One Crore Five Lakh Only") == 10500000
+
+
+def test_letter_lists_failures(fields, app):
+    res = check_document({**fields, "amount": 100.0}, app, submitted_on=SUB)
+    letter = generate_deficiency_letter(fields, res, app)
+    assert "R4" in letter and "DRAFT" in letter.upper()
+
+
+# End to end on generated documents --------------------------------------------------
+@pytest.mark.skipif(not (ROOT / "data" / "labels.csv").exists(), reason="run tools/generate_test_docs.py first")
+def test_pipeline_on_two_generated_documents():
+    import csv
+    from src.pipeline import load_applications, run_check
+    apps = load_applications()
+    labels = list(csv.DictReader(open(ROOT / "data" / "labels.csv")))
+    clean = next(l for l in labels if l["defect_type"] == "none" and l["scanned"] == "0")
+    bad = next(l for l in labels if l["defect_type"] == "short_tenure")
+    for lab, expected in [(clean, "PASS"), (bad, "FAIL")]:
+        pdf = (ROOT / "data" / "test_documents" / lab["file"]).read_bytes()
+        out = run_check(pdf, apps[lab["app_id"]], submitted_on=date.fromisoformat(lab["submitted_on"]),
+                        issuer=IssuerConnector(), ledger=Ledger(db_path=None))
+        assert out["overall"] == expected

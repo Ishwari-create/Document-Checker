@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block body %}
+<h1>Check your FDR before you submit</h1>
+<p class="muted">For institutes. Upload the receipt your bank gave you and see, in plain words, anything AICTE will ask you to fix. Nothing you upload here is stored or sent to AICTE.</p>
+{% if error %}<div class="err">{{ error }}</div>{% endif %}
+<form class="panel" method="post" enctype="multipart/form-data">
+  <div class="row">
+    <div><label for="app_id">Your application</label><select id="app_id" name="app_id">
+      {% for a in apps.values() %}<option value="{{ a.app_id }}" {% if r and r.app.app_id==a.app_id %}selected{% endif %}>{{ a.institute_name }}</option>{% endfor %}</select></div>
+    <div><label for="received">Planned submission date</label><input type="date" id="received" name="received"></div>
+  </div>
+  <div class="row">
+    <div><label for="pdf">Your receipt (PDF)</label><input type="file" id="pdf" name="pdf" accept="application/pdf"></div>
+    <div><label for="sample">or try a sample receipt</label><select id="sample" name="sample"><option value="">-</option>
+      {% for k,v in samples.items() %}<option value="{{ k }}">{{ k }} ({{ v.app_id[-4:] }})</option>{% endfor %}</select></div>
+  </div>
+  <button class="btn">Check my receipt</button>
+</form>
+{% if r %}
+  {% set problems = r.results|selectattr('status','in',['FAIL','UNCERTAIN'])|list %}
+  <div class="split">
+    {% with c=r, page=(r.extraction.pages[0] if r.extraction.pages else {'width':595,'height':842}), img=r.img, boxes=r.boxes, extraction=r.extraction %}{% include "_receipt.html" %}{% endwith %}
+    <div>
+    {% if not problems %}<h2 style="margin-top:0">Ready to submit</h2><p>We found nothing AICTE would ask you to fix. Send the original receipt and the affidavit to your Regional Office as instructed in your Letter of Approval.</p>
+    {% else %}<h2 style="margin-top:0">Fix {{ problems|length }} thing{{ 's' if problems|length > 1 }} before you submit</h2>{% endif %}
+    {% for r2 in problems %}{% with r=r2, officer=false, show_fix=true, c=r %}{% include "_finding.html" %}{% endwith %}{% endfor %}
+    </div>
+  </div>
+{% endif %}
+{% endblock %}

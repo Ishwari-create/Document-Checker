@@ -1,0 +1,63 @@
+{
+ "connected_banks": [
+  "Ganga Valley Bank"
+ ],
+ "records": {
+  "311486309292": {
+   "bank": "Ganga Valley Bank",
+   "amount": 1500000.0,
+   "issue_date": "2026-04-30",
+   "maturity_date": "2036-04-30",
+   "depositor_name": "Godavari Institute of Management Studies"
+  },
+  "713978646760": {
+   "bank": "Ganga Valley Bank",
+   "amount": 5000000.0,
+   "issue_date": "2026-05-01",
+   "maturity_date": "2036-05-01",
+   "depositor_name": "Vindhya Institute of Technology and Management"
+  },
+  "793877267600": {
+   "bank": "Ganga Valley Bank",
+   "amount": 1200000.0,
+   "issue_date": "2026-05-09",
+   "maturity_date": "2036-05-09",
+   "depositor_name": "Brahmaputra School of Architecture"
+  },
+  "131267106234": {
+   "bank": "Ganga Valley Bank",
+   "amount": 3500000.0,
+   "issue_date": "2026-04-28",
+   "maturity_date": "2036-04-28",
+   "depositor_name": "Shivalik College of Engineering"
+  },
+  "309651764475": {
+   "bank": "Ganga Valley Bank",
+   "amount": 1500000.0,
+   "issue_date": "2026-05-02",
+   "maturity_date": "2033-05-02",
+   "depositor_name": "Chilika Institute of Pharmaceutical Sciences"
+  },
+  "453611052967": {
+   "bank": "Ganga Valley Bank",
+   "amount": 3500000.0,
+   "issue_date": "2026-04-27",
+   "maturity_date": "2036-04-27",
+   "depositor_name": "Sahyadri Institute of Engineering and Research"
+  },
+  "386812414916": {
+   "bank": "Ganga Valley Bank",
+   "amount": 1200000.0,
+   "issue_date": "2026-05-09",
+   "maturity_date": "2036-05-09",
+   "depositor_name": "Aravalli Business School"
+  },
+  "311422335026": {
+   "bank": "Ganga Valley Bank",
+   "amount": 2800000.0,
+   "issue_date": "2026-04-25",
+   "maturity_date": "2036-04-25",
+   "depositor_name": "Konark Agro Industries"
+  }
+ }
+}

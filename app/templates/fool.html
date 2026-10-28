@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block body %}
+<h1>Try to fool it</h1>
+<p class="muted">Take a receipt that passes, change one thing the way a careless or dishonest applicant might, and run the checker on the edited file. Pick the edit yourself or let it choose at random.</p>
+<form class="panel" method="post">
+  <div class="row">
+    <div><label for="base">Start from</label><select id="base" name="base"><option value="">Random clean receipt</option>
+      {% for k in clean %}<option value="{{ k }}">{{ k }} - {{ specs[k].depositor }}</option>{% endfor %}</select></div>
+    <div><label for="trick">Edit to make</label><select id="trick" name="trick"><option value="">Random edit</option>
+      {% for k,v in tricks.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select></div>
+  </div>
+  <button class="btn">Make the edit and check it</button>
+</form>
+{% endblock %}

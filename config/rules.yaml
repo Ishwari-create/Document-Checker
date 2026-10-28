@@ -1,62 +1,152 @@
+# ---------------------------------------------------------------------------
+# Rule pack: Security Deposit FDR (document type "fdr")
+#
+# Every rule carries the source it comes from and whether we have checked that
+# source ourselves. "verified: false" means the value is a working assumption
+# that must be confirmed against the current APH before real use; the app shows
+# such rules with a "to confirm" tag instead of hiding the doubt.
+#
+# To change policy (e.g. tenure 8 -> 10 years) edit this file only. No code
+# change is needed, and the rules version below is written into every audit
+# log entry, so old decisions stay traceable to the rules that produced them.
+# ---------------------------------------------------------------------------
+pack: fdr
+version: "2026.10-r3"
+document_label: "Security Deposit - Fixed Deposit Receipt (FDR)"
+
+sources:
+  REG2024: >-
+    AICTE (Grant of Approvals for the Technical Institutions) guidelines 2024-27,
+    cl. 4.15(b), 6.2(f), 6.2(g), 6.6(c), 11.8 (text via indiankanoon.org/doc/173919027)
+  APH_CL9: >-
+    AICTE Approval Process Handbook (older edition), cl. 9 "Evaluation by the
+    Regional Committee" - FDR conditions and amount table
+  LOI: >-
+    AICTE Letter of Intent issued to an institute (public copy, stisttvm.edu.in).
+    Conditions: FD in a nationalised or RBI-recognised scheduled commercial bank,
+    8-year period, in favour of Member Secretary AICTE, amount as per APH cl. 9,
+    Government and Government-aided institutions exempt.
+  RBI2: "RBI Act 1934, Second Schedule (list of scheduled banks)"
+  PRACTICE: "Standard banking/scrutiny check, not a handbook clause"
+  PS: "SIH 2026 problem statement SIH26261 (AICTE) functional requirements"
+
+# Who does not need a Security Deposit at all (REG2024 cl. 6.6(c), LOI)
+exempt_institution_types:
+  - Government
+  - Government Aided
+  - Government University
+
 rules:
   - id: R1
-    name: "Beneficiary Verification"
-    clause: "AICTE APH Clause 4.1.2"
-    severity: "FATAL"
-    description: "FDR must be in favour of the AICTE Member Secretary or jointly with AICTE"
-    required_keywords:
-      - "member secretary"
-      - "aicte"
-    rejection_message: "The Fixed Deposit Receipt is not drawn in favour of the Member Secretary, AICTE as mandated under Clause 4.1.2."
+    name: "Drawn in favour of Member Secretary, AICTE"
+    problem: "Not payable to Member Secretary, AICTE"
+    severity: FATAL
+    source: LOI
+    clause: "LOI condition; APH cl. 9"
+    verified: true
+    accept_patterns:
+      - "member secretary.*(aicte|all india council for technical education)"
+    fix_hint: "Get the FDR re-issued in favour of 'Member Secretary, AICTE' (jointly with the institute/trust if your bank requires a joint holder)."
 
   - id: R2
-    name: "Approved Bank Verification"
-    clause: "AICTE APH Clause 4.1.2 / RBI Schedule II"
-    severity: "FATAL"
-    description: "FDR must be issued by a Nationalised Bank or Scheduled Commercial Bank approved by RBI"
-    rejection_message: "The issuing bank is not recognized as a Nationalised or Scheduled Commercial Bank under RBI Schedule II."
+    name: "Issued by a Nationalised / Scheduled Commercial Bank"
+    problem: "Bank not eligible"
+    severity: FATAL
+    source: LOI
+    clause: "LOI condition; RBI Act Second Schedule"
+    verified: true
+    ineligible_markers: ["co-operative", "cooperative", "co-op", "credit society", "sahakari",
+                         "finance", "investments", "nbfc", "nidhi", "chit"]
+    fix_hint: "Co-operative banks, credit societies and NBFCs are not accepted. Create the FDR in a nationalised or scheduled commercial bank."
 
   - id: R3
-    name: "Tenure Compliance (8 Years)"
-    clause: "AICTE APH Clause 4.1.3"
-    severity: "FATAL"
-    description: "Tenure of the FDR must be for a minimum duration of 8 years (96 months)"
-    minimum_tenure_years: 8.0
-    tolerance_days: 15
-    rejection_message: "The tenure of the FDR is less than the mandatory 8 years (96 months) required under Clause 4.1.3."
+    name: "Tenure covers the Security Deposit period"
+    problem: "Tenure too short"
+    severity: FATAL
+    source: REG2024
+    clause: "Guidelines 2024-27 cl. 6.2(g)"
+    verified: false        # 2024-27 text says SD is withdrawable after 10 years; older LOIs say 8 years
+    minimum_tenure_years: 10
+    tolerance_days: 7
+    fix_hint: "Tenure must be at least {min_years} years from the date of deposit. Ask the bank to extend the maturity date or issue a fresh FDR."
 
   - id: R4
-    name: "Prescribed Security Amount"
-    clause: "AICTE APH Clause 4.1.4"
-    severity: "FATAL"
-    description: "FDR amount must meet or exceed the mandatory security deposit threshold for the institution category"
-    default_required_amount: 1500000.00
-    category_thresholds:
-      Technical: 1500000.00
-      Management: 1000000.00
-      Pharmacy: 1500000.00
-      Architecture: 1000000.00
-      Applied Arts: 1000000.00
-    rejection_message: "The deposit amount does not satisfy the minimum prescribed amount under Clause 4.1.4."
+    name: "Amount meets the required Security Deposit"
+    problem: "Amount short"
+    severity: FATAL
+    source: APH_CL9
+    clause: "APH cl. 9 (amount table); Guidelines 2024-27 cl. 4.15(b) (sum across programmes)"
+    verified: false        # amount table is from the older APH; replace with APH 2024-27 figures
+    # Rs. per programme. "special" = minority / women-only / hilly & north-east institutions.
+    amount_table:
+      Engineering & Technology: {general: 3500000, special: 2800000}
+      Management:               {general: 1500000, special: 1200000}
+      Pharmacy:                 {general: 1500000, special: 1200000}
+      Architecture:             {general: 1500000, special: 1200000}
+      Hotel Management:         {general: 1500000, special: 1200000}
+      Applied Arts & Crafts:    {general: 1500000, special: 1200000}
+      Computer Applications:    {general: 1500000, special: 1200000}
+    fix_hint: "Deposit the shortfall of Rs. {shortfall} (a second FDR on the same terms is acceptable) or re-issue one FDR for Rs. {required}."
 
   - id: R5
-    name: "Institute Identity Match"
-    clause: "AICTE APH Clause 2.3.1"
-    severity: "FATAL"
-    description: "The institute name on the FDR must match the institutional applicant records in AICTE database"
-    match_threshold: 85.0
-    rejection_message: "The depositor/institute name on the FDR differs significantly from the AICTE application record."
+    name: "Depositor matches the applicant institute / trust"
+    problem: "Depositor is not the applicant"
+    severity: FATAL
+    source: REG2024
+    clause: "Guidelines 2024-27 cl. 6.2(f) (SD created by the applicant)"
+    verified: true
+    pass_score: 88
+    review_score: 70
+    fix_hint: "The depositor on the FDR must be the applicant institute or its trust/society exactly as registered on the AICTE portal."
 
   - id: R6
-    name: "Date Logic & Validity"
-    clause: "AICTE APH Clause 4.1.5"
-    severity: "WARNING"
-    description: "Issue date cannot be in the future, maturity date must be after issue date, and FDR cannot be pre-matured"
-    rejection_message: "Inconsistent dates detected: Issue date is in the future or maturity date is invalid."
+    name: "Dates are valid"
+    problem: "Dates invalid"
+    severity: FATAL
+    source: REG2024
+    clause: "Guidelines 2024-27 cl. 11.8 (no premature encashment)"
+    verified: true
+    fix_hint: "Check the deposit and maturity dates with the issuing branch; a back-dated, future-dated or already matured FDR cannot be accepted."
 
   - id: R7
-    name: "Document Integrity & Tamper Check"
-    clause: "AICTE APH Clause 1.4"
-    severity: "WARNING"
-    description: "PDF metadata and visual scan check for signs of unauthorized manipulation or missing bank authenticity marks"
-    rejection_message: "Potential document anomalies or tampering indicators detected during forensic integrity check."
+    name: "Submitted within 15 days of the Letter of Approval"
+    problem: "Submitted late"
+    severity: WARNING
+    source: REG2024
+    clause: "Guidelines 2024-27 cl. 6.2(f)"
+    verified: true
+    days_allowed: 15
+    # cl. 6.2(f): late SD attracts a penalty of 10% (till 31 May) and 50% (till 31 July);
+    # after that approval is withdrawn. Month-day values below.
+    penalty_slabs:
+      - {until: "05-31", percent: 10}
+      - {until: "07-31", percent: 50}
+    fix_hint: "Late submission: a penalty of {percent}% of the Security Deposit (Rs. {penalty}) applies under cl. 6.2(f)."
+
+  - id: R8
+    name: "Amount in figures agrees with amount in words"
+    problem: "Figures and words differ"
+    severity: FATAL
+    source: PRACTICE
+    clause: "Scrutiny practice (alteration indicator)"
+    verified: true
+    fix_hint: "The figures and words on the receipt disagree. Obtain a fresh receipt from the bank; corrected or overwritten receipts are not accepted."
+
+  - id: R9
+    name: "Confirmed by the issuing bank"
+    problem: "Bank record does not match"
+    severity: FATAL
+    source: PS
+    clause: "SIH26261: verification with issuing authority"
+    verified: true
+    compare_fields: [amount, maturity_date, depositor_name]
+    fix_hint: "The bank's record does not match the receipt. The Regional Office will seek written confirmation from the branch."
+
+  - id: R10
+    name: "FDR not already used in another application"
+    problem: "FDR already used elsewhere"
+    severity: FATAL
+    source: PS
+    clause: "SIH26261: duplicate detection"
+    verified: true
+    fix_hint: "This FDR number (or this exact file) has already been submitted for another application. Each approval needs its own deposit."

@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block body %}
+<h1>Audit trail</h1>
+<p class="muted">Every automated check and every officer decision, with the file's SHA-256 and the rule version used. Self-checks by institutes are not recorded.</p>
+<div class="tablewrap"><table class="audit">
+<tr><th>When</th><th>Who</th><th>What</th><th>Application</th><th>File</th><th>Rules</th><th>Result</th><th>Detail</th></tr>
+{% for r in rows %}<tr><td>{{ r.at|replace('T',' ') }}</td><td>{{ r.actor }}</td><td>{{ r.action|replace('_',' ') }}</td><td>{{ r.app_id }}</td><td><code>{{ r.sha256[:12] }}</code></td><td>{{ r.rules_version }}</td><td>{{ r.outcome }}</td>
+<td class="small">{% if r.detail is mapping and r.detail.overrides is defined %}{% for o in r.detail.overrides %}{{ o.rule }}: {{ o.note or o.officer }} {% endfor %}{% elif r.detail is mapping %}{% for k,v in r.detail.items() if v != 'PASS' %}{{ k }} {{ v }} {% endfor %}{% endif %}</td></tr>{% endfor %}
+</table></div>
+{% endblock %}

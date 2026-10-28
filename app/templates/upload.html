@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block body %}
+<h1>Check a receipt</h1>
+<p class="muted">Upload the FDR as received (digital PDF or scan) and choose the application it was submitted for.</p>
+{% if error %}<div class="err">{{ error }}</div>{% endif %}
+<form class="panel" method="post" enctype="multipart/form-data">
+  <div class="row"><div><label for="pdf">Receipt (PDF)</label><input type="file" id="pdf" name="pdf" accept="application/pdf"></div></div>
+  <div class="row">
+    <div><label for="app_id">Application</label><select id="app_id" name="app_id">
+      {% for a in apps.values() %}<option value="{{ a.app_id }}">{{ a.app_id }} - {{ a.institute_name }}</option>{% endfor %}</select></div>
+    <div><label for="received">Date received</label><input type="date" id="received" name="received" value="{{ today.isoformat() }}"></div>
+  </div>
+  <button class="btn">Check receipt</button>
+</form>
+<p class="note">To see duplicate detection, download a receipt from the queue and upload it here against a different application.</p>
+{% endblock %}

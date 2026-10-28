@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block body %}
+<h1>Received Security Deposit FDRs</h1>
+<p class="muted">Receipts are checked as soon as they arrive. Cases that need a person are listed first.</p>
+<div class="summary">
+  <div><b>{{ pending }}</b>awaiting an officer</div>
+  <div><b>{{ counts.UNCERTAIN }}</b>needs review</div>
+  <div><b>{{ counts.FAIL }}</b>deficiency found</div>
+  <div><b>{{ counts.PASS }}</b>no deficiency found</div>
+</div>
+<div class="tablewrap">
+<table>
+<thead><tr><th>Receipt</th><th>Institute</th><th>Bank</th><th class="num">Amount (Rs.)</th><th>Received</th><th>System finding</th><th>Points raised</th><th>Officer</th></tr></thead>
+<tbody>
+{% for c in cases %}{% set f = c.extraction.fields %}
+<tr class="link" onclick="location.href='{{ url_for('check', case_id=c.id) }}'">
+  <td><a href="{{ url_for('check', case_id=c.id) }}">{{ c.id }}</a>{% if c.extraction.method=='ocr' %} <span class="muted small">scan</span>{% endif %}</td>
+  <td>{{ c.app.institute_name }}<div class="muted small">{{ c.app.app_id }}</div></td>
+  <td class="small">{{ f.bank_name or '-' }}</td>
+  <td class="num">{{ f.amount|inr }}</td>
+  <td class="small">{{ c.received|dmy }}</td>
+  <td><span class="st st-{{ c.overall }}">{{ OVERALL_TEXT[c.overall] }}</span></td>
+  <td class="small">{% for r in c.results if r.status in ('FAIL','UNCERTAIN') %}{{ r.problem if r.status=='FAIL' else 'Check ' ~ r.name|lower }}{% if not loop.last %}; {% endif %}{% endfor %}</td>
+  <td class="small">{% if c.decision %}{{ {'accept':'Accepted','letter':'Letter drafted','bank':'Bank asked'}[c.decision.action] }}{% else %}<span class="muted">Pending</span>{% endif %}</td>
+</tr>
+{% endfor %}
+</tbody></table></div>
+{% endblock %}

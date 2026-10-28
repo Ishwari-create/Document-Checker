@@ -1,469 +1,449 @@
 """
-Rule Engine for AICTE Fixed Deposit Receipt Verification
-Loads rules from config/rules.yaml and checks all 7 compliance rules.
-Returns a list of RuleVerdict dicts ready to be consumed by A-2 (Streamlit).
+Rule engine for the Security Deposit FDR.
+
+All thresholds, amounts and clause references live in config/rules.yaml; this
+file only holds the logic. Each rule returns one verdict:
+
+    PASS       the document satisfies the rule
+    FAIL       the document breaks the rule (with the evidence that shows it)
+    UNCERTAIN  the machine cannot decide; an officer must look
+    NA         the rule does not apply to this case (or its input is unavailable)
+
+The engine never takes an adverse decision by itself: FAIL produces a draft
+deficiency, which an officer has to confirm (see app/ and registry.Ledger).
 """
+
+from __future__ import annotations
 
 import json
 import re
-from dataclasses import dataclass, asdict
-from datetime import datetime
+from datetime import date, datetime, timedelta
+from difflib import SequenceMatcher
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-try:
-    import yaml
-    YAML_AVAILABLE = True
-except ImportError:
-    YAML_AVAILABLE = False
+import yaml
 
-try:
-    from rapidfuzz import fuzz
-    FUZZY_AVAILABLE = True
-except ImportError:
-    try:
-        from difflib import SequenceMatcher
-        FUZZY_AVAILABLE = False
-    except ImportError:
-        FUZZY_AVAILABLE = False
+ROOT = Path(__file__).resolve().parent.parent
+RULES_FILE = ROOT / "config" / "rules.yaml"
+BANKS_FILE = ROOT / "data" / "scheduled_banks.json"
 
 
-# ─────────────────────────────────────────────────────────────
-# Constants
-# ─────────────────────────────────────────────────────────────
-CONFIG_DIR = Path(__file__).parent.parent / "config"
-DATA_DIR = Path(__file__).parent.parent / "data"
-RULES_FILE = CONFIG_DIR / "rules.yaml"
-BANKS_FILE = DATA_DIR / "scheduled_banks.json"
-
-AICTE_BENEFICIARY_KEYWORDS = {"member secretary", "aicte"}
+# ---------------------------------------------------------------------------
+# Config loading
+# ---------------------------------------------------------------------------
+def load_pack(path: Path = RULES_FILE) -> Dict[str, Any]:
+    with open(path, encoding="utf-8") as f:
+        return yaml.safe_load(f)
 
 
-# ─────────────────────────────────────────────────────────────
-# Data Classes
-# ─────────────────────────────────────────────────────────────
-@dataclass
-class RuleVerdict:
-    rule_id: str
-    name: str
-    clause: str
-    severity: str          # "FATAL" | "WARNING"
-    status: str            # "PASS" | "FAIL" | "UNCERTAIN"
-    evidence: str          # Exact text snippet from document
-    reasoning: str         # Human-readable explanation
-
-    def to_dict(self) -> Dict[str, Any]:
-        return asdict(self)
+def load_rules_config() -> List[Dict[str, Any]]:      # kept for A-1's original API
+    return load_pack()["rules"]
 
 
-# ─────────────────────────────────────────────────────────────
-# Loaders
-# ─────────────────────────────────────────────────────────────
-def load_rules_config() -> List[Dict[str, Any]]:
-    """Load rules from config/rules.yaml."""
-    if not YAML_AVAILABLE or not RULES_FILE.exists():
-        return []
-    with open(RULES_FILE, "r", encoding="utf-8") as f:
-        data = yaml.safe_load(f)
-    return data.get("rules", [])
+def load_banks(include_demo: bool = True) -> Dict[str, str]:
+    """normalised name -> display label"""
+    data = json.loads(BANKS_FILE.read_text(encoding="utf-8"))
+    out = {_norm_bank(b): b for b in data.get("banks", [])}
+    for alias, full in data.get("aliases", {}).items():
+        out[_norm_bank(alias)] = full
+    if include_demo:
+        for b in data.get("synthetic_demo_banks", {}).get("banks", []):
+            out[_norm_bank(b)] = f"{b} (synthetic demo bank)"
+    return out
 
 
-def load_approved_banks() -> List[str]:
-    """Load list of AICTE-approved banks from data/scheduled_banks.json."""
-    if not BANKS_FILE.exists():
-        return []
-    with open(BANKS_FILE, "r", encoding="utf-8") as f:
-        data = json.load(f)
-    banks = [b.lower() for b in data.get("banks", [])]
-    aliases = {k.lower(): v.lower() for k, v in data.get("aliases", {}).items()}
-    banks += list(aliases.keys())
-    return banks
+# ---------------------------------------------------------------------------
+# Text helpers
+# ---------------------------------------------------------------------------
+_ABBREV = {
+    "engg": "engineering", "engg.": "engineering", "eng": "engineering", "inst": "institute",
+    "instt": "institute", "tech": "technology", "mgmt": "management", "mgt": "management",
+    "coll": "college", "clg": "college", "univ": "university", "pharm": "pharmacy",
+    "sci": "sciences", "&": "and", "edu": "education", "soc": "society",
+}
+_DROP = {"the", "of", "m/s", "ms", "and", "for"}
 
 
-# ─────────────────────────────────────────────────────────────
-# Fuzzy Matching Helper
-# ─────────────────────────────────────────────────────────────
-def fuzzy_ratio(a: str, b: str) -> float:
-    """Return string similarity score 0-100."""
-    if not a or not b:
+def norm_name(s: Optional[str]) -> List[str]:
+    s = (s or "").lower().replace("&", " and ")
+    s = re.sub(r"[^a-z0-9/ ]", " ", s)
+    toks = [_ABBREV.get(t, t) for t in s.split()]
+    return [t for t in toks if t not in _DROP]
+
+
+def name_similarity(a: Optional[str], b: Optional[str]) -> float:
+    """0-100. Average of a token-set and a token-sort comparison, so that a
+    short name that is merely contained in a long one does not score 100."""
+    ta, tb = norm_name(a), norm_name(b)
+    if not ta or not tb:
         return 0.0
-    if FUZZY_AVAILABLE:
-        return fuzz.token_set_ratio(a.lower(), b.lower())
-    else:
-        # stdlib fallback
-        return SequenceMatcher(None, a.lower(), b.lower()).ratio() * 100
+    sa, sb = set(ta), set(tb)
+    inter = " ".join(sorted(sa & sb))
+    da = " ".join(sorted(sa - sb))
+    db = " ".join(sorted(sb - sa))
+    t1, t2 = f"{inter} {da}".strip(), f"{inter} {db}".strip()
+    r = lambda x, y: SequenceMatcher(None, x, y).ratio()
+    token_set = max(r(inter, t1) if inter else 0, r(inter, t2) if inter else 0, r(t1, t2))
+    token_sort = r(" ".join(sorted(ta)), " ".join(sorted(tb)))
+    coverage = len(sa & sb) / max(len(sa), len(sb))      # share of words the two names have in common
+    return round(100 * (token_set + token_sort) / 2 * (0.6 + 0.4 * coverage), 1)
 
 
-# ─────────────────────────────────────────────────────────────
-# Individual Rule Checks
-# ─────────────────────────────────────────────────────────────
-def _check_r1_beneficiary(fields: Dict[str, Any], rule_cfg: Dict[str, Any]) -> RuleVerdict:
-    """R1: FDR must be in favour of Member Secretary, AICTE."""
-    beneficiary = (fields.get("beneficiary_name") or "").strip()
-    
-    if not beneficiary:
-        return RuleVerdict(
-            rule_id="R1", name=rule_cfg["name"], clause=rule_cfg["clause"],
-            severity=rule_cfg["severity"], status="UNCERTAIN",
-            evidence="Beneficiary field not found in document.",
-            reasoning="Cannot determine beneficiary — field was not extracted. Manual verification required."
-        )
-
-    ben_lower = beneficiary.lower()
-    has_aicte = "aicte" in ben_lower
-    has_member_sec = "member secretary" in ben_lower or "ms." in ben_lower
-
-    if has_aicte and has_member_sec:
-        return RuleVerdict(
-            rule_id="R1", name=rule_cfg["name"], clause=rule_cfg["clause"],
-            severity=rule_cfg["severity"], status="PASS",
-            evidence=f"In favour of: {beneficiary}",
-            reasoning="Beneficiary correctly identifies Member Secretary, AICTE."
-        )
-    elif has_aicte:
-        return RuleVerdict(
-            rule_id="R1", name=rule_cfg["name"], clause=rule_cfg["clause"],
-            severity=rule_cfg["severity"], status="UNCERTAIN",
-            evidence=f"In favour of: {beneficiary}",
-            reasoning="AICTE mentioned but 'Member Secretary' designation not explicitly present. Manual review advised."
-        )
-    else:
-        return RuleVerdict(
-            rule_id="R1", name=rule_cfg["name"], clause=rule_cfg["clause"],
-            severity=rule_cfg["severity"], status="FAIL",
-            evidence=f"In favour of: {beneficiary}",
-            reasoning=rule_cfg["rejection_message"]
-        )
+def _norm_bank(s: str) -> str:
+    s = (s or "").lower().replace("&", " and ")
+    s = re.sub(r"[^a-z ]", " ", s)
+    s = re.sub(r"\b(the|ltd|limited|branch)\b", " ", s)
+    return " ".join(s.split())
 
 
-def _check_r2_bank(fields: Dict[str, Any], rule_cfg: Dict[str, Any], approved_banks: List[str]) -> RuleVerdict:
-    """R2: Issuing bank must be a nationalised/scheduled commercial bank."""
-    bank_name = (fields.get("bank_name") or "").strip().lower()
-
-    if not bank_name:
-        return RuleVerdict(
-            rule_id="R2", name=rule_cfg["name"], clause=rule_cfg["clause"],
-            severity=rule_cfg["severity"], status="UNCERTAIN",
-            evidence="Bank name not found.",
-            reasoning="Bank name could not be extracted. Manual verification required."
-        )
-
-    for approved in approved_banks:
-        if approved in bank_name or bank_name in approved:
-            return RuleVerdict(
-                rule_id="R2", name=rule_cfg["name"], clause=rule_cfg["clause"],
-                severity=rule_cfg["severity"], status="PASS",
-                evidence=f"Issuing Bank: {fields['bank_name']}",
-                reasoning=f"Bank '{fields['bank_name']}' is on the RBI Scheduled Bank list."
-            )
-
-    # Fuzzy match as uncertain threshold
-    best_score = max((fuzzy_ratio(bank_name, a) for a in approved_banks), default=0)
-    if best_score >= 80:
-        return RuleVerdict(
-            rule_id="R2", name=rule_cfg["name"], clause=rule_cfg["clause"],
-            severity=rule_cfg["severity"], status="UNCERTAIN",
-            evidence=f"Issuing Bank: {fields['bank_name']} (similarity {best_score:.0f}%)",
-            reasoning="Bank name is a close but not exact match to approved list. Manual verification recommended."
-        )
-
-    return RuleVerdict(
-        rule_id="R2", name=rule_cfg["name"], clause=rule_cfg["clause"],
-        severity=rule_cfg["severity"], status="FAIL",
-        evidence=f"Issuing Bank: {fields.get('bank_name', 'Unknown')}",
-        reasoning=rule_cfg["rejection_message"]
-    )
-
-
-def _check_r3_tenure(fields: Dict[str, Any], rule_cfg: Dict[str, Any]) -> RuleVerdict:
-    """R3: FDR tenure must be >= 8 years."""
-    tenure = fields.get("tenure_years")
-    issue_date = fields.get("issue_date")
-    maturity_date = fields.get("maturity_date")
-    min_years = rule_cfg.get("minimum_tenure_years", 8.0)
-    tolerance_days = rule_cfg.get("tolerance_days", 15)
-    min_days = min_years * 365.25 - tolerance_days
-
-    if tenure is None:
-        if not issue_date or not maturity_date:
-            return RuleVerdict(
-                rule_id="R3", name=rule_cfg["name"], clause=rule_cfg["clause"],
-                severity=rule_cfg["severity"], status="UNCERTAIN",
-                evidence="Dates not found in document.",
-                reasoning="Issue and/or maturity dates missing — tenure cannot be computed."
-            )
-        try:
-            d1 = datetime.strptime(issue_date, "%Y-%m-%d")
-            d2 = datetime.strptime(maturity_date, "%Y-%m-%d")
-            tenure = round((d2 - d1).days / 365.25, 2)
-        except Exception:
-            return RuleVerdict(
-                rule_id="R3", name=rule_cfg["name"], clause=rule_cfg["clause"],
-                severity=rule_cfg["severity"], status="UNCERTAIN",
-                evidence=f"Issue: {issue_date}, Maturity: {maturity_date}",
-                reasoning="Date parsing error — tenure could not be computed."
-            )
-
-    evidence = f"Issue: {issue_date or 'N/A'} → Maturity: {maturity_date or 'N/A'} = {tenure} years"
-    if tenure >= min_years - (tolerance_days / 365.25):
-        return RuleVerdict(
-            rule_id="R3", name=rule_cfg["name"], clause=rule_cfg["clause"],
-            severity=rule_cfg["severity"], status="PASS",
-            evidence=evidence,
-            reasoning=f"Tenure of {tenure} years meets minimum requirement of {min_years} years."
-        )
-    else:
-        return RuleVerdict(
-            rule_id="R3", name=rule_cfg["name"], clause=rule_cfg["clause"],
-            severity=rule_cfg["severity"], status="FAIL",
-            evidence=evidence,
-            reasoning=f"{rule_cfg['rejection_message']} Detected tenure: {tenure} years (required: {min_years})."
-        )
-
-
-def _check_r4_amount(fields: Dict[str, Any], rule_cfg: Dict[str, Any], app_ctx: Dict[str, Any]) -> RuleVerdict:
-    """R4: FDR amount must meet prescribed threshold for category."""
-    amount = fields.get("amount")
-    category = app_ctx.get("category", "Technical")
-    thresholds = rule_cfg.get("category_thresholds", {})
-    required = app_ctx.get("required_amount") or thresholds.get(category, rule_cfg.get("default_required_amount", 1500000.0))
-
-    if amount is None:
-        return RuleVerdict(
-            rule_id="R4", name=rule_cfg["name"], clause=rule_cfg["clause"],
-            severity=rule_cfg["severity"], status="UNCERTAIN",
-            evidence="Amount not found in document.",
-            reasoning="Deposit amount could not be extracted. Manual verification required."
-        )
-
-    evidence = f"Extracted Amount: ₹{amount:,.2f} | Required: ₹{required:,.2f} (Category: {category})"
-    if amount >= required:
-        return RuleVerdict(
-            rule_id="R4", name=rule_cfg["name"], clause=rule_cfg["clause"],
-            severity=rule_cfg["severity"], status="PASS",
-            evidence=evidence,
-            reasoning=f"Deposit amount ₹{amount:,.2f} meets minimum requirement of ₹{required:,.2f}."
-        )
-    else:
-        return RuleVerdict(
-            rule_id="R4", name=rule_cfg["name"], clause=rule_cfg["clause"],
-            severity=rule_cfg["severity"], status="FAIL",
-            evidence=evidence,
-            reasoning=f"{rule_cfg['rejection_message']} Shortfall: ₹{required - amount:,.2f}."
-        )
-
-
-def _check_r5_institute_name(fields: Dict[str, Any], rule_cfg: Dict[str, Any], app_ctx: Dict[str, Any]) -> RuleVerdict:
-    """R5: Institute name on FDR must fuzzy-match AICTE portal data."""
-    fdr_institute = (fields.get("institute_name") or "").strip()
-    app_institute = (app_ctx.get("institute_name") or "").strip()
-    threshold = rule_cfg.get("match_threshold", 85.0)
-
-    if not fdr_institute:
-        return RuleVerdict(
-            rule_id="R5", name=rule_cfg["name"], clause=rule_cfg["clause"],
-            severity=rule_cfg["severity"], status="UNCERTAIN",
-            evidence="Institute name not found in FDR.",
-            reasoning="Institute/depositor name could not be extracted from the document."
-        )
-    if not app_institute:
-        return RuleVerdict(
-            rule_id="R5", name=rule_cfg["name"], clause=rule_cfg["clause"],
-            severity=rule_cfg["severity"], status="UNCERTAIN",
-            evidence=f"FDR Institute: {fdr_institute}",
-            reasoning="No reference institute name provided in application context for comparison."
-        )
-
-    score = fuzzy_ratio(fdr_institute, app_institute)
-    evidence = f"FDR: '{fdr_institute}' vs Portal: '{app_institute}' (similarity: {score:.0f}%)"
-
-    if score >= threshold:
-        return RuleVerdict(
-            rule_id="R5", name=rule_cfg["name"], clause=rule_cfg["clause"],
-            severity=rule_cfg["severity"], status="PASS",
-            evidence=evidence,
-            reasoning=f"Institute name matches at {score:.0f}% — above {threshold:.0f}% threshold."
-        )
-    elif score >= 70:
-        return RuleVerdict(
-            rule_id="R5", name=rule_cfg["name"], clause=rule_cfg["clause"],
-            severity=rule_cfg["severity"], status="UNCERTAIN",
-            evidence=evidence,
-            reasoning=f"Partial name match ({score:.0f}%). Could be abbreviation or minor variation. Manual review advised."
-        )
-    else:
-        return RuleVerdict(
-            rule_id="R5", name=rule_cfg["name"], clause=rule_cfg["clause"],
-            severity=rule_cfg["severity"], status="FAIL",
-            evidence=evidence,
-            reasoning=f"{rule_cfg['rejection_message']} Similarity: {score:.0f}% (required: ≥{threshold:.0f}%)."
-        )
-
-
-def _check_r6_date_logic(fields: Dict[str, Any], rule_cfg: Dict[str, Any]) -> RuleVerdict:
-    """R6: Validate date logic — issue ≤ today, maturity > issue, not pre-matured."""
-    issue_str = fields.get("issue_date")
-    mat_str = fields.get("maturity_date")
-    today = datetime.today()
-
-    if not issue_str or not mat_str:
-        return RuleVerdict(
-            rule_id="R6", name=rule_cfg["name"], clause=rule_cfg["clause"],
-            severity=rule_cfg["severity"], status="UNCERTAIN",
-            evidence=f"Issue: {issue_str or 'missing'}, Maturity: {mat_str or 'missing'}",
-            reasoning="Dates missing — date logic cannot be validated."
-        )
-
+def _d(s: Optional[str]) -> Optional[date]:
+    if not s:
+        return None
     try:
-        issue_dt = datetime.strptime(issue_str, "%Y-%m-%d")
-        mat_dt = datetime.strptime(mat_str, "%Y-%m-%d")
+        return datetime.strptime(s, "%Y-%m-%d").date()
     except ValueError:
-        return RuleVerdict(
-            rule_id="R6", name=rule_cfg["name"], clause=rule_cfg["clause"],
-            severity=rule_cfg["severity"], status="UNCERTAIN",
-            evidence=f"Issue: {issue_str}, Maturity: {mat_str}",
-            reasoning="Date format invalid — could not parse for logic checks."
-        )
-
-    issues = []
-    if issue_dt > today:
-        issues.append(f"Issue date {issue_str} is in the future.")
-    if mat_dt <= issue_dt:
-        issues.append(f"Maturity date {mat_str} is not after issue date {issue_str}.")
-    if mat_dt < today:
-        issues.append(f"FDR has already matured (maturity: {mat_str}).")
-
-    evidence = f"Issue: {issue_str}, Maturity: {mat_str}, Checked: {today.strftime('%Y-%m-%d')}"
-
-    if not issues:
-        return RuleVerdict(
-            rule_id="R6", name=rule_cfg["name"], clause=rule_cfg["clause"],
-            severity=rule_cfg["severity"], status="PASS",
-            evidence=evidence,
-            reasoning="All date checks passed. Issue date is valid, maturity is future and after issue."
-        )
-    else:
-        return RuleVerdict(
-            rule_id="R6", name=rule_cfg["name"], clause=rule_cfg["clause"],
-            severity=rule_cfg["severity"], status="FAIL",
-            evidence=evidence,
-            reasoning=" | ".join(issues)
-        )
+        return None
 
 
-def _check_r7_integrity(fields: Dict[str, Any], raw_text: str, rule_cfg: Dict[str, Any]) -> RuleVerdict:
-    """R7: Basic document integrity check — flags suspicious text patterns."""
-    suspicious_patterns = [
-        r"copy\s*of\s*copy",
-        r"do\s*not\s*use",
-        r"cancelled",
-        r"specimen",
-        r"sample\s*document",
-        r"void",
-        r"for\s*testing",
-        r"invalid",
-    ]
-    flags = []
-    for pat in suspicious_patterns:
-        if re.search(pat, raw_text, re.IGNORECASE):
-            flags.append(pat.replace(r"\s*", " ").replace(r"\b", "").strip())
-
-    # Very short or empty text = likely scanned / low quality
-    if len(raw_text.strip()) < 100:
-        flags.append("Extracted text is abnormally short — possible scanned image or corrupted PDF.")
-
-    if not flags:
-        return RuleVerdict(
-            rule_id="R7", name=rule_cfg["name"], clause=rule_cfg["clause"],
-            severity=rule_cfg["severity"], status="PASS",
-            evidence="No suspicious watermarks, void marks, or integrity issues detected in document text.",
-            reasoning="Document passed basic integrity checks."
-        )
-    else:
-        return RuleVerdict(
-            rule_id="R7", name=rule_cfg["name"], clause=rule_cfg["clause"],
-            severity=rule_cfg["severity"], status="UNCERTAIN",
-            evidence=f"Flags detected: {', '.join(flags)}",
-            reasoning=f"{rule_cfg['rejection_message']} Human review strongly recommended."
-        )
+def _add_years(d: date, n: int) -> date:
+    try:
+        return d.replace(year=d.year + n)
+    except ValueError:
+        return d.replace(year=d.year + n, day=28)
 
 
-# ─────────────────────────────────────────────────────────────
-# Main Public API
-# ─────────────────────────────────────────────────────────────
-def check_document(
-    fields: Dict[str, Any],
-    application_context: Dict[str, Any],
-    raw_text: str = ""
-) -> List[Dict[str, Any]]:
+def inr(x: float) -> str:
+    """Indian digit grouping: 3500000 -> 35,00,000"""
+    s = f"{int(round(x))}"
+    head, tail = s[:-3], s[-3:]
+    groups = []
+    while len(head) > 2:
+        groups.insert(0, head[-2:]); head = head[:-2]
+    if head:
+        groups.insert(0, head)
+    return ",".join(groups + [tail])
+
+
+def _months_from_text(t: Optional[str]) -> Optional[int]:
+    if not t:
+        return None
+    m = re.search(r"(\d{1,3})\s*(month|year|yr)", t, re.I)
+    if not m:
+        return None
+    n = int(m.group(1))
+    return n if m.group(2).lower().startswith("month") else n * 12
+
+
+# ---------------------------------------------------------------------------
+# Verdict builder
+# ---------------------------------------------------------------------------
+def _v(cfg: dict, status: str, evidence: str, reasoning: str, fields: List[str] = (),
+       fix: str = "", ps_status: Optional[str] = None, severity: Optional[str] = None,
+       sources: Dict[str, str] = None) -> Dict[str, Any]:
+    default_ps = {"PASS": "Verified", "FAIL": "Deficiency", "UNCERTAIN": "Manual review required",
+                  "NA": "Not applicable", "EXEMPT": "Not applicable"}[status]
+    return {
+        "rule_id": cfg["id"], "name": cfg["name"], "clause": cfg.get("clause", ""),
+        "problem": cfg.get("problem", cfg["name"]),
+        "severity": severity or cfg.get("severity", "FATAL"), "status": status,
+        "ps_status": ps_status or default_ps,
+        "evidence": evidence, "reasoning": reasoning,
+        "fix": fix if status in ("FAIL", "UNCERTAIN") else "",
+        "fields": list(fields),
+        "source": (sources or {}).get(cfg.get("source", ""), cfg.get("source", "")),
+        "verified_source": bool(cfg.get("verified", False)),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Rules
+# ---------------------------------------------------------------------------
+def r1_beneficiary(f, cfg, ctx, env):
+    ben = (f.get("beneficiary_name") or "").strip()
+    if not ben:
+        return _v(cfg, "UNCERTAIN", "No 'in favour of' line found on the receipt.",
+                  "Payee could not be read; officer to check.", ["beneficiary_name"], cfg["fix_hint"])
+    low = ben.lower()
+    if any(re.search(p, low) for p in cfg["accept_patterns"]):
+        return _v(cfg, "PASS", f"In favour of: {ben}", "Payee is Member Secretary, AICTE.", ["beneficiary_name"])
+    mentions_aicte = bool(re.search(r"aicte|council\s*for\s*technical", low))
+    mentions_ms = "member" in low
+    if mentions_aicte or (mentions_ms and "secretary" not in low):
+        return _v(cfg, "UNCERTAIN", f"In favour of: {ben}",
+                  "Payee mentions AICTE but 'Member Secretary' is not clearly readable.",
+                  ["beneficiary_name"], cfg["fix_hint"])
+    return _v(cfg, "FAIL", f"In favour of: {ben}",
+              "The deposit is payable to someone other than Member Secretary, AICTE, so AICTE "
+              "cannot encash or hold a lien on it.", ["beneficiary_name"], cfg["fix_hint"])
+
+
+def r2_bank(f, cfg, ctx, env):
+    bank = (f.get("bank_name") or "").strip()
+    if not bank:
+        return _v(cfg, "UNCERTAIN", "Issuing bank not identified.", "Bank name could not be read.",
+                  ["bank_name"], cfg["fix_hint"])
+    low = bank.lower()
+    bad = [m for m in cfg["ineligible_markers"] if re.search(rf"\b{re.escape(m)}\b", low)]
+    if bad:
+        return _v(cfg, "FAIL", f"Issuing institution: {bank}",
+                  f"Identified as a non-scheduled-commercial lender (marker: '{bad[0]}').",
+                  ["bank_name"], cfg["fix_hint"])
+    banks = env["banks"]
+    key = _norm_bank(bank)
+    if key in banks:
+        return _v(cfg, "PASS", f"Issuing bank: {banks[key]}", "Bank is on the accepted list.", ["bank_name"])
+    best = max(banks, key=lambda b: SequenceMatcher(None, key, b).ratio())
+    score = SequenceMatcher(None, key, best).ratio() * 100
+    if score >= 92:
+        return _v(cfg, "PASS", f"Issuing bank: {bank} (read as {banks[best]}, {score:.0f}% match)",
+                  "Bank matches the accepted list allowing for scan errors.", ["bank_name"])
+    return _v(cfg, "UNCERTAIN", f"Issuing bank: {bank}",
+              "Bank not found in the scheduled bank list held by the system; officer to verify "
+              "against the current RBI Second Schedule.", ["bank_name"], cfg["fix_hint"])
+
+
+def r3_tenure(f, cfg, ctx, env):
+    years = int(cfg["minimum_tenure_years"])
+    tol = int(cfg.get("tolerance_days", 0))
+    fix = cfg["fix_hint"].format(min_years=years)
+    issue, mat = _d(f.get("issue_date")), _d(f.get("maturity_date"))
+    if issue and mat:
+        need = _add_years(issue, years)
+        months = (mat.year - issue.year) * 12 + mat.month - issue.month
+        ev = f"Deposit {issue:%d-%m-%Y} to maturity {mat:%d-%m-%Y} = {months} months"
+        if mat >= need - timedelta(days=tol):
+            return _v(cfg, "PASS", ev, f"Covers the {years}-year period.", ["issue_date", "maturity_date"])
+        return _v(cfg, "FAIL", ev, f"Matures on {mat:%d-%m-%Y}; it must run until at least {need:%d-%m-%Y} "
+                  f"({years} years).", ["issue_date", "maturity_date"], fix)
+    months = _months_from_text(f.get("tenure_text"))
+    if months is not None:
+        ev = f"Printed period: {f.get('tenure_text')} (dates unreadable)"
+        if months >= years * 12:
+            return _v(cfg, "UNCERTAIN", ev, "Printed period is sufficient but dates could not be read to confirm.",
+                      ["tenure_text"], fix)
+        return _v(cfg, "FAIL", ev, f"Printed period is {months} months; {years * 12} required.", ["tenure_text"], fix)
+    return _v(cfg, "UNCERTAIN", "Deposit and maturity dates not found.", "Tenure cannot be computed.",
+              ["issue_date", "maturity_date"], fix)
+
+
+def required_amount(cfg: dict, ctx: dict) -> (float, str):
+    if ctx.get("required_amount"):
+        return float(ctx["required_amount"]), "as entered"
+    table = cfg["amount_table"]
+    progs = ctx.get("programmes") or ([ctx["category"]] if ctx.get("category") else [])
+    slab = "special" if ctx.get("special_category") else "general"
+    total, parts = 0.0, []
+    for p in progs:
+        key = p if p in table else ("Engineering & Technology" if p == "Technical" else None)
+        if key is None:
+            continue
+        amt = table[key][slab]
+        total += amt
+        parts.append(f"{key} {inr(amt)}")
+    basis = " + ".join(parts) + (" (minority/women/NE slab)" if slab == "special" else "")
+    return total, basis
+
+
+def r4_amount(f, cfg, ctx, env):
+    amt = f.get("amount")
+    req, basis = required_amount(cfg, ctx)
+    if not req:
+        return _v(cfg, "NA", "Programme list not available.", "Required amount cannot be computed.", ["amount"])
+    if amt is None:
+        return _v(cfg, "UNCERTAIN", f"Required: Rs. {inr(req)} ({basis})", "Deposit amount could not be read.",
+                  ["amount"], cfg["fix_hint"].format(shortfall="?", required=inr(req)))
+    ev = f"Deposit Rs. {inr(amt)} vs required Rs. {inr(req)} ({basis})"
+    if amt + 0.5 >= req:
+        return _v(cfg, "PASS", ev, "Amount is sufficient.", ["amount"])
+    return _v(cfg, "FAIL", ev, f"Short by Rs. {inr(req - amt)}.", ["amount"],
+              cfg["fix_hint"].format(shortfall=inr(req - amt), required=inr(req)))
+
+
+def r5_depositor(f, cfg, ctx, env):
+    dep = (f.get("depositor_name") or f.get("institute_name") or "").strip()
+    names = [n for n in (ctx.get("institute_name"), ctx.get("trust")) if n]
+    if not dep:
+        return _v(cfg, "UNCERTAIN", "Depositor name not found on the receipt.", "Depositor could not be read.",
+                  ["depositor_name"], cfg["fix_hint"])
+    if not names:
+        return _v(cfg, "NA", f"Depositor: {dep}", "No application record to compare with.", ["depositor_name"])
+    scored = sorted(((name_similarity(dep, n), n) for n in names), reverse=True)
+    score, best = scored[0]
+    ev = f"Receipt: '{dep}'  |  Portal: '{best}'  ({score:.0f}% similar)"
+    if score >= cfg["pass_score"]:
+        return _v(cfg, "PASS", ev, "Depositor is the applicant institute or its trust.", ["depositor_name"])
+    if score >= cfg["review_score"]:
+        return _v(cfg, "UNCERTAIN", ev, "Names are close but not the same; could be an abbreviation.",
+                  ["depositor_name"], cfg["fix_hint"])
+    return _v(cfg, "FAIL", ev, "Depositor is not the applicant institute or its registered trust/society.",
+              ["depositor_name"], cfg["fix_hint"])
+
+
+def r6_dates(f, cfg, ctx, env):
+    issue, mat = _d(f.get("issue_date")), _d(f.get("maturity_date"))
+    as_of = env["as_of"]
+    if not issue or not mat:
+        return _v(cfg, "UNCERTAIN", f"Deposit: {f.get('issue_date') or 'not read'}, maturity: "
+                  f"{f.get('maturity_date') or 'not read'}", "Dates missing.", ["issue_date", "maturity_date"],
+                  cfg["fix_hint"])
+    ev = f"Deposit {issue:%d-%m-%Y}, maturity {mat:%d-%m-%Y}, received {as_of:%d-%m-%Y}"
+    if mat <= issue:
+        return _v(cfg, "FAIL", ev, "Maturity date is not after the deposit date.", ["issue_date", "maturity_date"],
+                  cfg["fix_hint"])
+    if issue > as_of:
+        return _v(cfg, "FAIL", ev, f"Deposit date is {(issue - as_of).days} days after the date the receipt "
+                  "was received (post-dated receipt).", ["issue_date"], cfg["fix_hint"])
+    if mat <= as_of:
+        return _v(cfg, "FAIL", ev, "The deposit had already matured when it was submitted.",
+                  ["maturity_date"], cfg["fix_hint"], ps_status="Expired")
+    return _v(cfg, "PASS", ev, "Dates are consistent.", ["issue_date", "maturity_date"])
+
+
+def r7_timeliness(f, cfg, ctx, env):
+    loa, sub = _d(ctx.get("loa_date")), env.get("submitted_on")
+    if not loa or not sub:
+        return _v(cfg, "NA", "Letter of Approval date or receipt date not available.",
+                  "Timeliness not checked.")
+    days = (sub - loa).days
+    ev = f"LoA {loa:%d-%m-%Y}, FDR received {sub:%d-%m-%Y} ({days} days)"
+    if days <= cfg["days_allowed"]:
+        return _v(cfg, "PASS", ev, f"Within {cfg['days_allowed']} days.")
+    sd, _ = required_amount(env["pack_rules"]["R4"], ctx)
+    for slab in cfg["penalty_slabs"]:
+        mm, dd = map(int, slab["until"].split("-"))
+        if sub <= date(loa.year, mm, dd):
+            pen = sd * slab["percent"] / 100
+            return _v(cfg, "FAIL", ev, f"Late by {days - cfg['days_allowed']} days; penalty of "
+                      f"{slab['percent']}% applies.", [],
+                      cfg["fix_hint"].format(percent=slab["percent"], penalty=inr(pen)))
+    return _v(cfg, "FAIL", ev, f"Received after 31 July {loa.year}; approval is liable to be withdrawn "
+              "under cl. 6.2(f).", [], "Refer to the Regional Officer: the penalty window has closed.",
+              severity="FATAL")
+
+
+def r8_words(f, cfg, ctx, env):
+    amt, words_val = f.get("amount"), f.get("amount_in_words_value")
+    if amt is None or words_val is None:
+        return _v(cfg, "NA", "Amount in words not printed or not readable.", "Cross-check not possible.",
+                  ["amount_words"])
+    ev = f"Figures Rs. {inr(amt)}  |  Words: '{f.get('amount_words')}' = Rs. {inr(words_val)}"
+    if abs(amt - words_val) < 1:
+        return _v(cfg, "PASS", ev, "Figures and words agree.", ["amount", "amount_words"])
+    return _v(cfg, "FAIL", ev, "Figures and words disagree: a common sign that the receipt was altered "
+              "after issue.", ["amount", "amount_words"], cfg["fix_hint"], ps_status="Mismatch detected")
+
+
+def r9_issuer(f, cfg, ctx, env):
+    issuer = env.get("issuer")
+    if issuer is None:
+        return _v(cfg, "NA", "No bank connection configured.", "Issuer check skipped.")
+    res = issuer.confirm(f.get("bank_name"), f.get("fdr_number"))
+    env["issuer_result"] = res
+    stamp = f"{res['source']}, checked {res['checked_at']}"
+    if res["status"] == "source_unavailable":
+        return _v(cfg, "UNCERTAIN", f"{res['detail']} ({stamp})", "Officer to obtain written branch confirmation.",
+                  ["bank_name"], cfg["fix_hint"], ps_status="Source unavailable")
+    if res["status"] == "verification_pending":
+        return _v(cfg, "UNCERTAIN", f"{res['detail']} ({stamp})", "Bank could not be asked.", ["fdr_number"],
+                  cfg["fix_hint"], ps_status="Verification pending")
+    if res["status"] == "not_found":
+        if f.get("_fdr_number_guessed"):
+            return _v(cfg, "UNCERTAIN", f"{res['detail']} ({stamp})",
+                      "FDR number was read from a poor scan and may be wrong.", ["fdr_number"], cfg["fix_hint"],
+                      ps_status="Manual review required")
+        return _v(cfg, "FAIL", f"{res['detail']} ({stamp})", "The bank has no such deposit.", ["fdr_number"],
+                  cfg["fix_hint"], ps_status="Mismatch detected")
+    rec, diffs, hl = res["record"], [], ["fdr_number"]
+    if f.get("amount") is not None and abs(float(rec["amount"]) - f["amount"]) >= 1:
+        diffs.append(f"amount: receipt Rs. {inr(f['amount'])}, bank Rs. {inr(rec['amount'])}"); hl.append("amount")
+    if f.get("maturity_date") and rec.get("maturity_date") != f["maturity_date"]:
+        diffs.append(f"maturity: receipt {f['maturity_date']}, bank {rec['maturity_date']}"); hl.append("maturity_date")
+    if f.get("depositor_name") and name_similarity(f["depositor_name"], rec.get("depositor_name")) < 88:
+        diffs.append(f"depositor: receipt '{f['depositor_name']}', bank '{rec['depositor_name']}'")
+        hl.append("depositor_name")
+    if diffs:
+        return _v(cfg, "FAIL", "; ".join(diffs) + f" ({stamp})",
+                  "The bank's own record disagrees with the receipt.", hl, cfg["fix_hint"],
+                  ps_status="Mismatch detected")
+    return _v(cfg, "PASS", f"Bank confirms deposit {f.get('fdr_number')} for Rs. {inr(rec['amount'])}, "
+              f"maturing {rec['maturity_date']} ({stamp})", "Verified with the issuing bank.", ["fdr_number"],
+              ps_status="Verified with issuer")
+
+
+def r10_reuse(f, cfg, ctx, env):
+    ledger = env.get("ledger")
+    if ledger is None or not ctx.get("app_id"):
+        return _v(cfg, "NA", "Submission ledger not connected.", "Reuse check skipped.")
+    hits = ledger.find_reuse(ctx["app_id"], f.get("fdr_number"), f.get("bank_name"), env.get("sha256") or "")
+    if not hits:
+        return _v(cfg, "PASS", f"FDR {f.get('fdr_number') or '(number unread)'} and file hash not seen in any "
+                  "other application.", "No reuse found.", ["fdr_number"])
+    h = hits[0]
+    how = "the identical file" if h["same_file"] else f"the same FDR number ({f.get('fdr_number')})"
+    return _v(cfg, "FAIL", f"{how} was submitted for application {h['app_id']} on {h['submitted_at']}",
+              "One deposit is being used to back two applications.", ["fdr_number"], cfg["fix_hint"],
+              ps_status="Duplicate detected")
+
+
+RULE_FUNCS = {"R1": r1_beneficiary, "R2": r2_bank, "R3": r3_tenure, "R4": r4_amount, "R5": r5_depositor,
+              "R6": r6_dates, "R7": r7_timeliness, "R8": r8_words, "R9": r9_issuer, "R10": r10_reuse}
+
+
+# ---------------------------------------------------------------------------
+# Public API
+# ---------------------------------------------------------------------------
+def check_document(fields: Dict[str, Any], application_context: Dict[str, Any], raw_text: str = "", *,
+                   as_of: Optional[date] = None, submitted_on: Optional[date] = None, issuer=None,
+                   ledger=None, sha256: Optional[str] = None, pack: Optional[dict] = None,
+                   include_demo_banks: bool = True) -> List[Dict[str, Any]]:
     """
-    Run all 7 AICTE compliance rules against extracted FDR fields.
-
-    Args:
-        fields: Output of extract_fdr_fields()["fields"]
-        application_context: {
-            "institute_name": str,
-            "category": str,         # Technical / Management / etc.
-            "required_amount": float  # Optional override
-        }
-        raw_text: Raw extracted text for integrity checks (R7)
-
-    Returns:
-        List of RuleVerdict dicts (JSON-serialisable)
+    fields              extract_fdr_fields(...)["fields"]
+    application_context the applicant's portal record: institute_name, trust, institution_type,
+                        special_category, programmes, loa_date, app_id
+                        (A-1's short form {institute_name, category, required_amount} still works)
+    submitted_on        date the receipt reached AICTE (defaults to today)
+    issuer, ledger      registry.IssuerConnector / registry.Ledger; omit to skip R9 / R10
     """
-    rules_config = load_rules_config()
-    approved_banks = load_approved_banks()
+    pack = pack or load_pack()
+    ctx = dict(application_context or {})
+    sub = submitted_on or _d(ctx.get("submitted_on")) or date.today()
+    env = {"as_of": as_of or sub, "submitted_on": sub, "issuer": issuer, "ledger": ledger, "sha256": sha256,
+           "banks": load_banks(include_demo_banks), "pack_rules": {r["id"]: r for r in pack["rules"]},
+           "sources": pack.get("sources", {})}
 
-    # Build rule lookup
-    rule_map = {r["id"]: r for r in rules_config}
+    itype = ctx.get("institution_type")
+    exempt = itype in pack.get("exempt_institution_types", [])
+    applic = {"id": "R0", "name": "Security Deposit applicable", "clause": "Guidelines 2024-27 cl. 6.2(f), 6.6(c)",
+              "severity": "FATAL", "source": "REG2024", "verified": True}
+    if exempt:
+        return [_v(applic, "EXEMPT", f"Institution type: {itype}",
+                   "Government / Government-aided institutions are exempt from the Security Deposit.",
+                   sources=env["sources"])]
 
-    results = [
-        _check_r1_beneficiary(fields, rule_map.get("R1", {"id": "R1", "name": "Beneficiary Verification",
-            "clause": "AICTE APH Clause 4.1.2", "severity": "FATAL",
-            "rejection_message": "FDR not in favour of Member Secretary, AICTE."})),
-
-        _check_r2_bank(fields, rule_map.get("R2", {"id": "R2", "name": "Approved Bank Verification",
-            "clause": "AICTE APH Clause 4.1.2", "severity": "FATAL",
-            "rejection_message": "Bank not in approved list."}), approved_banks),
-
-        _check_r3_tenure(fields, rule_map.get("R3", {"id": "R3", "name": "Tenure Compliance",
-            "clause": "AICTE APH Clause 4.1.3", "severity": "FATAL",
-            "minimum_tenure_years": 8.0, "tolerance_days": 15,
-            "rejection_message": "Tenure less than 8 years."})),
-
-        _check_r4_amount(fields, rule_map.get("R4", {"id": "R4", "name": "Prescribed Security Amount",
-            "clause": "AICTE APH Clause 4.1.4", "severity": "FATAL",
-            "default_required_amount": 1500000.0, "category_thresholds": {},
-            "rejection_message": "Amount below threshold."}), application_context),
-
-        _check_r5_institute_name(fields, rule_map.get("R5", {"id": "R5", "name": "Institute Identity Match",
-            "clause": "AICTE APH Clause 2.3.1", "severity": "FATAL",
-            "match_threshold": 85.0,
-            "rejection_message": "Institute name mismatch."}), application_context),
-
-        _check_r6_date_logic(fields, rule_map.get("R6", {"id": "R6", "name": "Date Logic & Validity",
-            "clause": "AICTE APH Clause 4.1.5", "severity": "WARNING",
-            "rejection_message": "Invalid date logic."})),
-
-        _check_r7_integrity(fields, raw_text, rule_map.get("R7", {"id": "R7", "name": "Document Integrity",
-            "clause": "AICTE APH Clause 1.4", "severity": "WARNING",
-            "rejection_message": "Integrity anomaly detected."})),
-    ]
-
-    return [r.to_dict() for r in results]
+    results = []
+    if itype:
+        results.append(_v(applic, "PASS", f"Institution type: {itype}", "Security Deposit is required.",
+                          sources=env["sources"]))
+    for cfg in pack["rules"]:
+        fn = RULE_FUNCS.get(cfg["id"])
+        if fn:
+            v = fn(fields, cfg, ctx, env)
+            v["source"] = env["sources"].get(cfg.get("source", ""), cfg.get("source", ""))
+            results.append(v)
+    return results
 
 
 def get_overall_verdict(rule_results: List[Dict[str, Any]]) -> str:
-    """
-    Compute overall document verdict from rule results.
-    Returns: "PASS" | "FAIL" | "UNCERTAIN"
-    """
-    statuses = [r["status"] for r in rule_results]
-    fatal_rules = [r for r in rule_results if r["severity"] == "FATAL"]
-    fatal_statuses = [r["status"] for r in fatal_rules]
-
-    if "FAIL" in fatal_statuses:
+    """PASS | FAIL | UNCERTAIN | EXEMPT"""
+    if any(r["status"] == "EXEMPT" for r in rule_results):
+        return "EXEMPT"
+    if any(r["status"] == "FAIL" and r["severity"] == "FATAL" for r in rule_results):
         return "FAIL"
-    if "UNCERTAIN" in statuses:
+    if any(r["status"] == "UNCERTAIN" or (r["status"] == "FAIL") for r in rule_results):
         return "UNCERTAIN"
     return "PASS"
+
+
+def rules_version() -> str:
+    return str(load_pack().get("version", "unversioned"))

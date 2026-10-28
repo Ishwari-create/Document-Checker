@@ -97,3 +97,15 @@ if any(r["status"] == "FAIL" for r in rule_results):
 - 14 planted defect documents (2 defects for each of 7 defect categories).
 - 4 rasterised/noisy scans to test OCR/scan fallback.
 - `data/labels.csv` contains ground-truth labels for automated evaluation metrics (precision, recall, false-alarm rate).
+
+---
+
+## 7. Changes on `feature/a2-frontend` (28 Oct 2026)
+
+This section supersedes sections 3-5 where they differ.
+
+- **Rules.** Now R0-R10, all in `config/rules.yaml` with real sources (docs/RULE_SOURCES.md). The clause numbers in section 4 above could not be traced to any AICTE text and are retired. Tenure is 10 years per the 2024-27 guidelines (to confirm). R7 "tamper" is replaced by R8 (figures vs words) and R9 (issuer confirmation); R10 detects reuse; R7 is now the 15-day submission check with penalty.
+- **Statuses.** PASS / FAIL / UNCERTAIN / NA, plus EXEMPT for government institutes. Each verdict also carries `problem`, `ps_status` (the brief's vocabulary), `fix`, `fields` (for evidence boxes), `source` and `verified_source`.
+- **Fields.** `institute_name` is now `depositor_name` (old key still filled). New: `ifsc`, `amount_words`, `amount_in_words_value`, `tenure_text`. `extract_fdr_fields` also returns `locations` (page + box per field), `pages`, `method` (text-layer / ocr) and `read_quality`.
+- **API.** `check_document(fields, application, raw_text, submitted_on=, issuer=, ledger=, sha256=)`; the A-1 short context `{institute_name, category, required_amount}` still works. `src/pipeline.run_check()` does read + check + log in one call.
+- **Front end.** Flask instead of Streamlit (Streamlit could not be installed in the build environment, and a plain web app deploys anywhere with Docker). Screens listed in README.

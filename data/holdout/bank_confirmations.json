@@ -1,0 +1,63 @@
+{
+ "connected_banks": [
+  "Malabar Coast Bank"
+ ],
+ "records": {
+  "154335349840": {
+   "bank": "Malabar Coast Bank",
+   "amount": 3500000.0,
+   "issue_date": "2026-04-25",
+   "maturity_date": "2036-04-25",
+   "depositor_name": "Sahyadri Institute of Engineering and Research"
+  },
+  "741520749048": {
+   "bank": "Malabar Coast Bank",
+   "amount": 2800000.0,
+   "issue_date": "2026-04-21",
+   "maturity_date": "2036-04-21",
+   "depositor_name": "Kaveri Women's College of Engineering"
+  },
+  "194650323160": {
+   "bank": "Malabar Coast Bank",
+   "amount": 1500000.0,
+   "issue_date": "2026-05-03",
+   "maturity_date": "2036-05-03",
+   "depositor_name": "Malwa College of Computer Applications"
+  },
+  "199817887524": {
+   "bank": "Malabar Coast Bank",
+   "amount": 1500000.0,
+   "issue_date": "2026-05-12",
+   "maturity_date": "2036-05-12",
+   "depositor_name": "Aravalli Business School"
+  },
+  "722026593455": {
+   "bank": "Malabar Coast Bank",
+   "amount": 1500000.0,
+   "issue_date": "2026-04-29",
+   "maturity_date": "2033-04-29",
+   "depositor_name": "Narmada College of Pharmacy"
+  },
+  "742644932277": {
+   "bank": "Malabar Coast Bank",
+   "amount": 1500000.0,
+   "issue_date": "2026-05-07",
+   "maturity_date": "2036-05-07",
+   "depositor_name": "Tapti Institute of Hotel Management"
+  },
+  "153243337236": {
+   "bank": "Malabar Coast Bank",
+   "amount": 1200000.0,
+   "issue_date": "2026-04-29",
+   "maturity_date": "2036-04-29",
+   "depositor_name": "Chilika Institute of Pharmaceutical Sciences"
+  },
+  "249715982027": {
+   "bank": "Malabar Coast Bank",
+   "amount": 3500000.0,
+   "issue_date": "2026-04-28",
+   "maturity_date": "2036-04-28",
+   "depositor_name": "Konark Agro Industries"
+  }
+ }
+}

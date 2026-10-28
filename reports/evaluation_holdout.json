@@ -1,0 +1,260 @@
+{
+  "summary": {
+    "documents": 8,
+    "clean": 4,
+    "defective": 4,
+    "scanned": 2,
+    "document_accuracy": 0.875,
+    "defects_caught_by_right_rule": "4/4",
+    "defective_passed_as_clean": 0,
+    "clean_wrongly_failed": 0,
+    "clean_sent_to_review": 1,
+    "false_alarm_rate_on_clean": 0.0,
+    "field_accuracy": {
+      "FDR number": "8/8",
+      "Amount": "7/8",
+      "Deposit date": "7/8",
+      "Maturity date": "7/8",
+      "Depositor": "6/8"
+    },
+    "avg_seconds_text_pdf": 0.04,
+    "avg_seconds_scan": 1.46,
+    "total_seconds": 3.2
+  },
+  "per_rule": [
+    {
+      "rule": "R1",
+      "planted": 1,
+      "caught": 1,
+      "false_flags": 0,
+      "sent_to_review": 0,
+      "precision": 1.0,
+      "recall": 1.0
+    },
+    {
+      "rule": "R2",
+      "planted": 0,
+      "caught": 0,
+      "false_flags": 0,
+      "sent_to_review": 1,
+      "precision": null,
+      "recall": null
+    },
+    {
+      "rule": "R3",
+      "planted": 1,
+      "caught": 1,
+      "false_flags": 0,
+      "sent_to_review": 1,
+      "precision": 1.0,
+      "recall": 1.0
+    },
+    {
+      "rule": "R4",
+      "planted": 1,
+      "caught": 1,
+      "false_flags": 0,
+      "sent_to_review": 1,
+      "precision": 1.0,
+      "recall": 1.0
+    },
+    {
+      "rule": "R5",
+      "planted": 1,
+      "caught": 1,
+      "false_flags": 0,
+      "sent_to_review": 1,
+      "precision": 1.0,
+      "recall": 1.0
+    },
+    {
+      "rule": "R6",
+      "planted": 0,
+      "caught": 0,
+      "false_flags": 0,
+      "sent_to_review": 1,
+      "precision": null,
+      "recall": null
+    },
+    {
+      "rule": "R7",
+      "planted": 0,
+      "caught": 0,
+      "false_flags": 0,
+      "sent_to_review": 0,
+      "precision": null,
+      "recall": null
+    },
+    {
+      "rule": "R8",
+      "planted": 0,
+      "caught": 0,
+      "false_flags": 0,
+      "sent_to_review": 0,
+      "precision": null,
+      "recall": null
+    },
+    {
+      "rule": "R9",
+      "planted": 0,
+      "caught": 0,
+      "false_flags": 0,
+      "sent_to_review": 1,
+      "precision": null,
+      "recall": null
+    },
+    {
+      "rule": "R10",
+      "planted": 0,
+      "caught": 0,
+      "false_flags": 0,
+      "sent_to_review": 0,
+      "precision": null,
+      "recall": null
+    }
+  ],
+  "documents": [
+    {
+      "doc": "FDR-H01",
+      "scanned": false,
+      "layout": "H",
+      "defect": "none",
+      "truth": "PASS",
+      "system": "PASS",
+      "expected_rules": [],
+      "failed_rules": [],
+      "review_rules": [],
+      "seconds": 0.04,
+      "note": "held-out layout",
+      "read_problems": []
+    },
+    {
+      "doc": "FDR-H02",
+      "scanned": false,
+      "layout": "H",
+      "defect": "none",
+      "truth": "PASS",
+      "system": "PASS",
+      "expected_rules": [],
+      "failed_rules": [],
+      "review_rules": [],
+      "seconds": 0.03,
+      "note": "held-out layout",
+      "read_problems": []
+    },
+    {
+      "doc": "FDR-H03",
+      "scanned": true,
+      "layout": "H",
+      "defect": "none",
+      "truth": "PASS",
+      "system": "UNCERTAIN",
+      "expected_rules": [],
+      "failed_rules": [],
+      "review_rules": [
+        "R2",
+        "R3",
+        "R4",
+        "R5",
+        "R6",
+        "R9"
+      ],
+      "seconds": 1.47,
+      "note": "held-out layout",
+      "read_problems": [
+        "amount",
+        "deposit date",
+        "maturity date",
+        "depositor"
+      ]
+    },
+    {
+      "doc": "FDR-H04",
+      "scanned": false,
+      "layout": "H",
+      "defect": "none",
+      "truth": "PASS",
+      "system": "PASS",
+      "expected_rules": [],
+      "failed_rules": [],
+      "review_rules": [],
+      "seconds": 0.05,
+      "note": "held-out layout",
+      "read_problems": []
+    },
+    {
+      "doc": "FDR-H05",
+      "scanned": false,
+      "layout": "H",
+      "defect": "short_tenure",
+      "truth": "FAIL",
+      "system": "FAIL",
+      "expected_rules": [
+        "R3"
+      ],
+      "failed_rules": [
+        "R3"
+      ],
+      "review_rules": [],
+      "seconds": 0.03,
+      "note": "held-out layout",
+      "read_problems": []
+    },
+    {
+      "doc": "FDR-H06",
+      "scanned": false,
+      "layout": "H",
+      "defect": "wrong_beneficiary",
+      "truth": "FAIL",
+      "system": "FAIL",
+      "expected_rules": [
+        "R1"
+      ],
+      "failed_rules": [
+        "R1"
+      ],
+      "review_rules": [],
+      "seconds": 0.03,
+      "note": "held-out layout",
+      "read_problems": []
+    },
+    {
+      "doc": "FDR-H07",
+      "scanned": true,
+      "layout": "H",
+      "defect": "short_amount",
+      "truth": "FAIL",
+      "system": "FAIL",
+      "expected_rules": [
+        "R4"
+      ],
+      "failed_rules": [
+        "R4"
+      ],
+      "review_rules": [],
+      "seconds": 1.46,
+      "note": "held-out layout",
+      "read_problems": [
+        "depositor"
+      ]
+    },
+    {
+      "doc": "FDR-H08",
+      "scanned": false,
+      "layout": "H",
+      "defect": "name_mismatch",
+      "truth": "FAIL",
+      "system": "FAIL",
+      "expected_rules": [
+        "R5"
+      ],
+      "failed_rules": [
+        "R5"
+      ],
+      "review_rules": [],
+      "seconds": 0.05,
+      "note": "held-out layout",
+      "read_problems": []
+    }
+  ]
+}

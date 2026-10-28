@@ -1,148 +1,65 @@
 """
-Deficiency Letter Generator for AICTE Document Scrutiny
-Generates a formal, clause-cited deficiency letter for non-compliant FDRs.
-Consumed by A-2 (Streamlit) to let officers download/print the letter.
+Draft deficiency letter for a non-compliant Security Deposit FDR.
+
+The letter is a DRAFT until an officer confirms it in the app; the system never
+sends it on its own. Only items the officer has accepted are included when
+`confirmed_rule_ids` is passed.
 """
+
+from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Iterable, List, Optional
 
 
-LETTER_HEADER = """AICTE - DEFICIENCY NOTICE
-All India Council for Technical Education
-Nelson Mandela Marg, Vasant Kunj, New Delhi – 110 070
-Phone: 011-29581000 | website: www.aicte-india.org
-─────────────────────────────────────────────────────────────────────────
-"""
-
-LETTER_FOOTER = """─────────────────────────────────────────────────────────────────────────
-NOTE: This notice is system-generated based on automated document analysis.
-The institute must resubmit a compliant Fixed Deposit Receipt within 30 days
-of the date of this notice. Failure to comply may result in rejection of the
-application or withdrawal of approval.
-
-For queries, contact:
-Bureau of Planning, Policy & Administration
-All India Council for Technical Education
-─────────────────────────────────────────────────────────────────────────
-"""
+def _deficient(rule_results: List[Dict[str, Any]], confirmed: Optional[Iterable[str]]) -> List[Dict[str, Any]]:
+    if confirmed is not None:
+        keep = set(confirmed)
+        return [r for r in rule_results if r["rule_id"] in keep]
+    return [r for r in rule_results if r["status"] == "FAIL"]
 
 
-def generate_deficiency_letter(
-    fields: Dict[str, Any],
-    rule_results: List[Dict[str, Any]],
-    application_context: Dict[str, Any],
-    officer_name: Optional[str] = None,
-    reference_number: Optional[str] = None
-) -> str:
-    """
-    Generate a formal deficiency letter for failed/uncertain FATAL rules.
-
-    Args:
-        fields: Extracted FDR fields from extractor.py
-        rule_results: List of RuleVerdict dicts from rule_engine.py
-        application_context: { "institute_name": str, "category": str, ... }
-        officer_name: Optional scrutiny officer name
-        reference_number: Optional reference/application number
-
-    Returns:
-        Formatted deficiency letter as a plain-text string
-    """
+def generate_deficiency_letter(fields: Dict[str, Any], rule_results: List[Dict[str, Any]],
+                               application_context: Dict[str, Any], officer_name: Optional[str] = None,
+                               reference_number: Optional[str] = None,
+                               confirmed_rule_ids: Optional[Iterable[str]] = None,
+                               draft: bool = True) -> str:
     today = datetime.today()
-    date_str = today.strftime("%d %B %Y")
+    inst = application_context.get("institute_name") or fields.get("depositor_name") or "the Institute"
+    app_id = application_context.get("app_id", "-")
+    ref = reference_number or f"SD/{app_id}/{today:%Y%m%d}"
+    items = _deficient(rule_results, confirmed_rule_ids)
 
-    institute = application_context.get("institute_name") or fields.get("institute_name") or "Concerned Institute"
-    category = application_context.get("category", "Technical")
-    ref = reference_number or "AUTO-" + today.strftime("%Y%m%d%H%M")
-    officer = officer_name or "Bureau of Planning, Policy & Administration"
-
-    # Filter failing or uncertain FATAL rules
-    deficient_rules = [
-        r for r in rule_results
-        if r["status"] in ("FAIL", "UNCERTAIN") and r["severity"] == "FATAL"
-    ]
-
-    # FDR details for salutation
-    fdr_number = fields.get("fdr_number") or "N/A"
-    bank_name = fields.get("bank_name") or "N/A"
-
-    lines = []
-    lines.append(LETTER_HEADER)
-    lines.append(f"Reference No: {ref}")
-    lines.append(f"Date: {date_str}\n")
-
-    lines.append(f"To,")
-    lines.append(f"The Principal/Director,")
-    lines.append(f"{institute},")
-    lines.append(f"(Category: {category})\n")
-
-    lines.append("Sub: Deficiency in Fixed Deposit Receipt Submitted for AICTE Compliance")
-    lines.append(f"       (FDR No.: {fdr_number} | Bank: {bank_name})\n")
-
-    lines.append("Sir/Madam,\n")
-
-    if not deficient_rules:
-        lines.append("On scrutiny of the Fixed Deposit Receipt submitted by your institute, "
-                     "no critical deficiencies were found. However, the following items require "
-                     "manual review and officer attention before final approval:\n")
-        uncertain = [r for r in rule_results if r["status"] == "UNCERTAIN"]
-        for i, r in enumerate(uncertain, 1):
-            lines.append(f"  {i}. [{r['rule_id']}] {r['name']} ({r['clause']})")
-            lines.append(f"     Evidence: {r['evidence']}")
-            lines.append(f"     Note: {r['reasoning']}\n")
-    else:
-        lines.append("On scrutiny of the Fixed Deposit Receipt (FDR) submitted by your institute, "
-                     "the following deficiencies/non-compliances have been identified in terms "
-                     "of the AICTE Approval Process Handbook (APH):\n")
-
-        for i, r in enumerate(deficient_rules, 1):
-            status_label = "NON-COMPLIANT" if r["status"] == "FAIL" else "REQUIRES VERIFICATION"
-            lines.append(f"  {i}. [{r['rule_id']}] {r['name']}  ── {status_label}")
-            lines.append(f"     Handbook Reference: {r['clause']}")
-            lines.append(f"     Evidence: {r['evidence']}")
-            lines.append(f"     Reason: {r['reasoning']}\n")
-
-    lines.append("You are, therefore, directed to rectify the above deficiencies and submit a "
-                 "corrected Fixed Deposit Receipt along with supporting documents within "
-                 "30 (thirty) days from the date of this notice.\n")
-
-    lines.append("Failure to submit the required documents within the stipulated time may "
-                 "result in rejection of the application or initiation of further action "
-                 "as per AICTE norms.\n")
-
-    lines.append("Yours faithfully,\n")
-    lines.append(f"{officer}")
-    lines.append("All India Council for Technical Education\n")
-
-    # Append all rule statuses as a summary table
-    lines.append("─────────────────────────────────────────────────────────────────────────")
-    lines.append("AUTOMATED VERIFICATION SUMMARY")
-    lines.append(f"{'Rule':<6} {'Name':<35} {'Clause':<25} {'Status'}")
-    lines.append("─" * 90)
-    for r in rule_results:
-        lines.append(f"{r['rule_id']:<6} {r['name']:<35} {r['clause']:<25} {r['status']}")
-
-    lines.append(LETTER_FOOTER)
-
-    return "\n".join(lines)
+    L = []
+    if draft:
+        L += ["DRAFT - generated for officer review. Not issued until approved by the Regional Office.", ""]
+    L += [f"Ref: {ref}", f"Date: {today:%d %B %Y}", "",
+          "To", "The Principal / Director", inst, f"Application No.: {app_id}", "",
+          "Subject: Deficiencies in the Security Deposit (FDR) submitted with your application", "",
+          f"FDR No. {fields.get('fdr_number') or 'not readable'}, issued by {fields.get('bank_name') or 'bank not readable'}.",
+          "", "Sir / Madam,", "",
+          "The Fixed Deposit Receipt submitted towards the Security Deposit has been scrutinised. "
+          "The following points need to be rectified:", ""]
+    if not items:
+        L += ["  No deficiency has been confirmed.", ""]
+    for i, r in enumerate(items, 1):
+        L += [f"  {i}. {r.get('problem') or r['name']}  [{r['rule_id']}; {r['clause']}]",
+              f"     Found: {r['evidence']}",
+              f"     Required action: {r.get('fix') or r.get('reasoning', '')}", ""]
+    L += ["Please submit the rectified FDR (original to the Regional Office, scanned copy on the portal) "
+          "along with the affidavit, within the time allowed by the Regional Office.", "",
+          "Yours faithfully,", "", officer_name or "Scrutiny Officer", "Regional Office", ""]
+    return "\n".join(L)
 
 
 def get_deficiency_summary(rule_results: List[Dict[str, Any]]) -> Dict[str, Any]:
-    """
-    Returns a short summary dict for dashboard display (A-2 use).
-    """
-    total = len(rule_results)
-    passed = sum(1 for r in rule_results if r["status"] == "PASS")
-    failed = sum(1 for r in rule_results if r["status"] == "FAIL")
-    uncertain = sum(1 for r in rule_results if r["status"] == "UNCERTAIN")
-    fatal_fails = sum(1 for r in rule_results if r["status"] == "FAIL" and r["severity"] == "FATAL")
-
+    fatal = sum(1 for r in rule_results if r["status"] == "FAIL" and r["severity"] == "FATAL")
+    unc = sum(1 for r in rule_results if r["status"] == "UNCERTAIN")
     return {
-        "total_rules": total,
-        "passed": passed,
-        "failed": failed,
-        "uncertain": uncertain,
-        "fatal_fails": fatal_fails,
-        "overall": "FAIL" if fatal_fails > 0 else ("UNCERTAIN" if uncertain > 0 else "PASS"),
-        "needs_letter": fatal_fails > 0 or uncertain > 0
+        "total_rules": len(rule_results),
+        "passed": sum(1 for r in rule_results if r["status"] == "PASS"),
+        "failed": sum(1 for r in rule_results if r["status"] == "FAIL"),
+        "uncertain": unc, "fatal_fails": fatal,
+        "overall": "FAIL" if fatal else ("UNCERTAIN" if unc else "PASS"),
+        "needs_letter": fatal > 0,
     }

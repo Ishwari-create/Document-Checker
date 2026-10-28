@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block body %}
+<h1>Results on the test set</h1>
+{% if not ev %}<p>Run <code>python tools/evaluate.py</code> first.</p>{% else %}{% set s = ev.summary %}
+<p class="muted">{{ s.documents }} synthetic receipts ({{ s.clean }} correct, {{ s.defective }} with one planted defect, {{ s.scanned }} scanned copies) from three invented bank layouts. These numbers show the method works end to end; they are not a measure of accuracy on real AICTE files.</p>
+<div class="summary">
+  <div><b>{{ s.defects_caught_by_right_rule }}</b>planted defects caught by the right rule</div>
+  <div><b>{{ s.clean_wrongly_failed }} of {{ s.clean }}</b>correct receipts wrongly failed</div>
+  <div><b>{{ s.clean_sent_to_review }} of {{ s.clean }}</b>correct receipts sent to an officer</div>
+  <div><b>{{ s.avg_seconds_text_pdf }} s / {{ s.avg_seconds_scan }} s</b>per digital PDF / per scan</div>
+</div>
+<div class="grid2">
+<div><h2>Per rule</h2><div class="tablewrap"><table>
+<tr><th>Rule</th><th class="num">Planted</th><th class="num">Caught</th><th class="num">False flags</th><th class="num">To review</th></tr>
+{% for r in ev.per_rule %}<tr><td>{{ r.rule }}</td><td class="num">{{ r.planted }}</td><td class="num">{{ r.caught }}</td><td class="num">{{ r.false_flags }}</td><td class="num">{{ r.sent_to_review }}</td></tr>{% endfor %}
+</table></div></div>
+<div><h2>Fields read correctly</h2><div class="tablewrap"><table>
+<tr><th>Field</th><th class="num">Exact match</th></tr>
+{% for k,v in s.field_accuracy.items() %}<tr><td>{{ k }}</td><td class="num">{{ v }}</td></tr>{% endfor %}
+</table></div></div></div>
+{% if hold %}
+<h2>Receipts in layouts it was never built for</h2>
+<p class="small">The test set above uses the three layouts the extractor was written against, so it flatters the extractor. To see what happens with a bank it has never seen, two further sets of 8 receipts were made in new layouts after the code was written. The first run on each is the honest number; set 1 was then used to widen the label wording, so only set 2 is still unseen.</p>
+<div class="tablewrap"><table>
+<tr><th>Set</th><th>First run, before any change</th><th>Now</th></tr>
+<tr><td>Unseen layout 1 (8 receipts, 2 scans)</td><td class="small">1 of 4 defects caught, 1 correct receipt wrongly failed, 0 defective receipts passed</td>
+<td class="small">{% set h=hold.holdout %}{{ h.defects_caught_by_right_rule }} defects caught, {{ h.clean_wrongly_failed }} wrongly failed, {{ h.defective_passed_as_clean }} defective passed, {{ h.clean_sent_to_review }} correct sent to review</td></tr>
+<tr><td>Unseen layout 2 (8 receipts, 2 scans)</td><td class="small">2 of 4 defects caught, 1 correct scan wrongly failed (amount misread), 0 defective receipts passed</td>
+<td class="small">{% set h=hold.holdout2 %}{{ h.defects_caught_by_right_rule }} defects caught, {{ h.clean_wrongly_failed }} wrongly failed, {{ h.defective_passed_as_clean }} defective passed, {{ h.clean_sent_to_review }} correct sent to review. Label wording not tuned; the scan rule below was added after this run.</td></tr>
+</table></div>
+<p class="small muted">What this shows: on unfamiliar wording the checker mostly says "I could not read this, officer please look" rather than guessing. It has not yet passed a defective receipt. Since that run, an amount read from a scan can no longer fail a receipt unless the figures and words agree. Onboarding a new bank's wording is a change to <code>config/field_labels.yaml</code>.</p>
+{% endif %}
+<h2>Every document</h2><div class="tablewrap"><table>
+<tr><th>Receipt</th><th>Planted defect</th><th>Expected</th><th>System</th><th>Failed</th><th>To review</th></tr>
+{% for r in ev.documents %}<tr><td><a href="{{ url_for('check', case_id=r.doc) }}">{{ r.doc }}</a>{% if r.scanned %} <span class="muted small">scan</span>{% endif %}</td>
+<td class="small">{{ r.defect|replace('_',' ') }}<div class="muted">{{ r.note }}</div></td><td><span class="st st-{{ r.truth }}">{{ OVERALL_TEXT[r.truth] }}</span></td>
+<td><span class="st st-{{ r.system }}">{{ OVERALL_TEXT[r.system] }}</span></td><td class="small">{{ r.failed_rules|join(', ') }}</td><td class="small">{{ r.review_rules|join(', ') }}</td></tr>{% endfor %}
+</table></div>
+{% endif %}
+{% endblock %}

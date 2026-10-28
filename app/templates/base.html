@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{% block title %}SD Scrutiny Desk{% endblock %}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;650;700&family=Noto+Serif&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<header class="bar">
+  <a class="brand" href="{{ url_for('queue') }}">SD Scrutiny Desk<span>Security Deposit FDR checks</span></a>
+  {% set ep = request.endpoint %}
+  {% if user %}<nav aria-label="Main">
+    {% if user.role == 'officer' %}
+    <a href="{{ url_for('queue') }}" class="{{ 'on' if ep in ('queue','check','letter') }}">Received FDRs</a>
+    <a href="{{ url_for('upload') }}" class="{{ 'on' if ep=='upload' }}">Check a receipt</a>
+    {% endif %}
+    <a href="{{ url_for('precheck') }}" class="{{ 'on' if ep=='precheck' }}">Institute self-check</a>
+    {% if user.role != 'institute' %}<a href="{{ url_for('fool') }}" class="{{ 'on' if ep=='fool' }}">Try to fool it</a>
+    <a href="{{ url_for('evaluation') }}" class="{{ 'on' if ep=='evaluation' }}">Test results</a>{% endif %}
+    <a href="{{ url_for('rules') }}" class="{{ 'on' if ep=='rules' }}">Rules</a>
+    {% if user.role in ('officer','auditor') %}<a href="{{ url_for('audit') }}" class="{{ 'on' if ep=='audit' }}">Audit trail</a>{% endif %}
+  </nav>
+  <div class="who">{{ user.name }} ({{ user.role }}) <a href="{{ url_for('logout') }}">Sign out</a></div>{% endif %}
+</header>
+<div class="synthetic">Prototype for SIH 2026 (PS SIH26261). Every institute, bank and receipt here is synthetic. Findings are advice to an officer, never a decision.</div>
+<main>{% block body %}{% endblock %}</main>
+</body>
+</html>

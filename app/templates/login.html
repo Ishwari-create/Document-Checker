@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block body %}
+<div style="max-width:420px">
+<h1>Sign in</h1>
+<p class="muted">Officers scrutinise receipts, auditors read the audit trail, institutes check their own receipt before submitting.</p>
+{% if error %}<div class="err">{{ error }}</div>{% endif %}
+<form class="panel" method="post">
+  <div class="row"><div style="flex:1"><label for="username">Username</label><input type="text" id="username" name="username" autocomplete="username" style="width:100%"></div></div>
+  <div class="row"><div style="flex:1"><label for="password">Password</label><input type="password" id="password" name="password" autocomplete="current-password" style="width:100%"></div></div>
+  <button class="btn">Sign in</button>
+</form>
+<p class="small muted">Demo accounts: <b>officer</b> / officer123, <b>auditor</b> / auditor123, <b>sahyadri</b> or <b>vindhya</b> / inst123 (institutes). In real use this is replaced by the AICTE portal's own sign-in.</p>
+</div>
+{% endblock %}

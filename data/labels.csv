@@ -1,0 +1,25 @@
+doc_id,file,app_id,scanned,layout,defect_type,expected_fail_rules,expected_overall,submitted_on,note,true_fdr_no,true_amount,true_issue,true_maturity,true_depositor
+FDR-T01,FDR-T01.pdf,1-SYN-2026-0111,1,B,wrong_beneficiary,R1,FAIL,2026-05-17,Drawn in favour of the trust secretary,BU352026001272,1500000,2026-05-12,2036-05-12,Aravalli Business School
+FDR-T02,FDR-T02.pdf,1-SYN-2026-0105,0,C,short_amount,R4,FAIL,2026-05-08,Two programmes (Engg + Mgmt) need 50 L; FDR covers only Engg (35 L),KO192026001758,3500000,2026-05-04,2036-05-04,Vindhya Institute of Technology and Management
+FDR-T03,FDR-T03.pdf,1-SYN-2026-0103,0,A,invalid_dates,R6,FAIL,2026-05-06,Deposit date is after the date of submission (post-dated),DN712026002189,1500000,2026-06-15,2036-06-15,Godavari Institute of Management Studies
+FDR-T04,FDR-T04.pdf,1-SYN-2026-0112,0,C,invalid_dates,R6,FAIL,2026-05-01,"Old FDR of 2014 that matured in 2024, re-submitted",KO272026002238,3500000,2014-06-12,2024-06-12,Pench Valley Institute of Technology
+FDR-T05,FDR-T05.pdf,1-SYN-2026-0110,1,B,name_mismatch,R5,FAIL,2026-05-03,Different institute's name,BU982026002018,1500000,2026-04-29,2036-04-29,Mahanadi Institute of Pharmacy
+FDR-T06,FDR-T06.pdf,1-SYN-2026-0110,0,A,none,,PASS,2026-05-06,,DN892026001090,1500000,2026-05-01,2036-05-01,Chilika Institute of Pharmaceutical Sciences
+FDR-T07,FDR-T07.pdf,1-SYN-2026-0101,0,B,altered,R8;R9,FAIL,2026-05-02,Figures overwritten to 35 L; words still read 25 L; bank record says 25 L,BU712026002316,3500000,2026-04-26,2036-04-26,Sahyadri Institute of Engineering and Research
+FDR-T08,FDR-T08.pdf,1-SYN-2026-0101,0,A,none,,PASS,2026-04-30,,DN872026000133,3500000,2026-04-26,2036-04-26,Sahyadri Institute of Engineering and Research
+FDR-T09,FDR-T09.pdf,1-SYN-2026-0108,0,A,name_mismatch,R5,FAIL,2026-05-12,Deposit made by an unrelated company,DN442026001960,1500000,2026-05-08,2036-05-08,Sai Krupa Hospitality Services Pvt. Ltd.
+FDR-T10,FDR-T10.pdf,1-SYN-2026-0109,0,C,none,,PASS,2026-05-02,,KO362026000944,3500000,2026-04-28,2036-04-28,Shivalik College of Engg.
+FDR-T11,FDR-T11.pdf,1-SYN-2026-0104,0,B,short_amount,R4,FAIL,2026-04-24,Women's college slab is 28 L; FDR is 25 L,BU102026001866,2500000,2026-04-22,2036-04-22,Kaveri Women's College of Engineering
+FDR-T12,FDR-T12.pdf,1-SYN-2026-0102,0,C,short_tenure,R3,FAIL,2026-05-01,"8 years: follows the older instruction, not the 10-year SD period",KO612026001574,1500000,2026-04-25,2034-04-25,Narmada College of Pharmacy
+FDR-T13,FDR-T13.pdf,1-SYN-2026-0105,0,B,none,,PASS,2026-05-11,,BU872026000560,5000000,2026-05-05,2036-05-05,Vindhya Institute of Technology and Management
+FDR-T14,FDR-T14.pdf,1-SYN-2026-0112,0,A,ineligible_bank,R2,FAIL,2026-05-02,Co-operative bank,SS182026001317,3500000,2026-04-27,2036-04-27,Pench Valley Institute of Technology
+FDR-T15,FDR-T15.pdf,1-SYN-2026-0106,0,C,none,,PASS,2026-05-13,,KO482026000613,1200000,2026-05-07,2036-05-07,Brahmaputra Kala Nyas
+FDR-T16,FDR-T16.pdf,1-SYN-2026-0106,0,A,short_tenure,R3,FAIL,2026-05-15,5 years,DN192026001655,1200000,2026-05-09,2031-05-09,Brahmaputra School of Architecture
+FDR-T17,FDR-T17.pdf,1-SYN-2026-0104,0,A,none,,PASS,2026-04-27,,DN452026000491,2800000,2026-04-23,2036-04-23,Kaveri Women's College of Engineering
+FDR-T18,FDR-T18.pdf,1-SYN-2026-0102,0,B,none,,PASS,2026-04-28,,BU872026000257,1500000,2026-04-26,2036-04-26,Narmada Education Trust
+FDR-T19,FDR-T19.pdf,1-SYN-2026-0109,0,A,wrong_beneficiary,R1,FAIL,2026-05-02,Drawn in favour of the college itself,DN872026001156,3500000,2026-04-27,2036-04-27,Shivalik College of Engineering
+FDR-T20,FDR-T20.pdf,1-SYN-2026-0109,0,A,altered,R9,FAIL,2026-05-01,"Receipt is internally consistent, but the bank's record shows Rs. 3,50,000",DN452026002447,3500000,2026-04-25,2036-04-25,Shivalik College of Engineering
+FDR-T21,FDR-T21.pdf,1-SYN-2026-0108,0,B,none,,PASS,2026-05-14,,BU682026000898,1500000,2026-05-09,2036-05-09,Tapti Institute of Hotel Management
+FDR-T22,FDR-T22.pdf,1-SYN-2026-0107,1,A,none,,PASS,2026-05-12,,DN532026000715,1500000,2026-05-07,2036-05-07,Malwa College of Computer Applications
+FDR-T23,FDR-T23.pdf,1-SYN-2026-0103,1,C,none,,PASS,2026-05-06,,KO132026000382,1500000,2026-04-30,2036-04-30,Godavari Institute of Management Studies
+FDR-T24,FDR-T24.pdf,1-SYN-2026-0107,0,B,ineligible_bank,R2,FAIL,2026-05-11,"NBFC, not a bank",SF842026001476,1500000,2026-05-07,2036-05-07,Malwa College of Computer Applications

@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}{{ c.id }} - SD Scrutiny Desk{% endblock %}
+{% block body %}
+{% set f = c.extraction.fields %}
+{% if c.trick is defined %}<div class="trick"><b>Edited copy of {{ c.base }}:</b> {{ c.trick }}. The edit was made before the checker saw the file; nothing tells it what changed.
+  <a href="{{ url_for('fool') }}">Try another edit</a></div>{% endif %}
+{% if error %}<div class="err">{{ error }}</div>{% endif %}
+
+<div class="casehead">
+  <div>
+    <h1>{{ c.app.institute_name }}</h1>
+    <div class="facts">
+      <div><span>Application</span> {{ c.app.app_id }}</div>
+      <div><span>Type</span> {{ c.app.institution_type }}{% if c.app.special_category %} (minority / women / NE slab){% endif %}</div>
+      <div><span>Programmes</span> {{ c.app.programmes|join(', ') }}</div>
+      <div><span>Letter of Approval</span> {{ c.app.loa_date|dmy }}</div>
+      <div><span>FDR received</span> {{ c.received|dmy }}</div>
+      <div><span>Security Deposit due</span> {% if c.overall == 'EXEMPT' %}Not required (exempt){% else %}Rs. {{ c.required|inr }}{% endif %}</div>
+    </div>
+  </div>
+  <div class="verdict {{ c.overall }}"><span class="small muted">System finding</span><b>{{ OVERALL_TEXT[c.overall] }}</b>
+    <span class="small muted">Rules {{ c.rules_version }}, file {{ c.sha256[:12] }}</span></div>
+</div>
+
+<div class="split">
+  {% with extraction=c.extraction %}{% include "_receipt.html" %}{% endwith %}
+
+  <div>
+    <form method="post" action="{{ url_for('decide', case_id=c.id) }}">
+    {% set open = c.results|selectattr('status','in',['FAIL','UNCERTAIN'])|list %}
+    {% set rest = c.results|rejectattr('status','in',['FAIL','UNCERTAIN'])|list %}
+    {% if open %}<h2 style="margin-top:0">Points for the officer ({{ open|length }})</h2>
+      {% for r in open %}{% with officer=true, show_fix=true %}{% include "_finding.html" %}{% endwith %}{% endfor %}
+    {% else %}<h2 style="margin-top:0">No points raised</h2>{% endif %}
+    <details class="passed" {% if not open %}open{% endif %}><summary>{{ rest|length }} check{{ 's' if rest|length != 1 }} passed or not applicable</summary>
+      {% for r in rest %}{% with officer=false, show_fix=false %}{% include "_finding.html" %}{% endwith %}{% endfor %}
+    </details>
+
+    {% if c.decision %}
+      <div class="panel"><h3>Officer decision</h3>
+        <p class="small">{{ {'accept':'FDR accepted','letter':'Deficiency letter drafted','bank':'Written confirmation sought from the bank'}[c.decision.action] }}
+        by {{ c.decision.officer }} on {{ c.decision.at }}.
+        {% if c.decision.overrides %}Overruled or annotated: {% for o in c.decision.overrides %}{{ o.rule }} ({{ o.note or o.officer }}){% if not loop.last %}; {% endif %}{% endfor %}.{% endif %}</p>
+        {% if c.decision.action == 'letter' %}<a class="btn ghost" href="{{ url_for('letter', case_id=c.id) }}">Open draft letter</a>{% endif %}
+      </div>
+    {% elif c.origin != 'fool' %}
+      <div class="panel">
+        <h3>Officer decision</h3>
+        <p class="small muted">The system does not reject anything. Confirm or overrule each point above, then record what happens next.</p>
+        <p class="small">Recorded as <b>{{ user.name }}</b>.</p>
+        <div class="row">
+          <button class="btn" name="action" value="accept">Accept FDR</button>
+          <button class="btn warn" name="action" value="letter">Prepare deficiency letter</button>
+          <button class="btn ghost" name="action" value="bank">Ask bank to confirm in writing</button>
+        </div>
+      </div>
+    {% endif %}
+    </form>
+
+    {% if c.origin != 'fool' %}
+    <details class="panel" {% if c.corrections is defined %}open{% endif %}>
+      <summary><b>Correct a misread value</b> <span class="small muted">when the scan was read wrongly; the checks run again</span></summary>
+      {% if c.corrections is defined %}<ul class="small">{% for k in c.corrections %}<li>{{ k.field }}: "{{ k.old }}" changed to "{{ k.new }}" by {{ k.by }}</li>{% endfor %}</ul>{% endif %}
+      <form method="post" action="{{ url_for('correct', case_id=c.id) }}" class="row" style="margin-top:10px">
+        <div><label for="field">Field</label><select id="field" name="field">{% for k,v in correctable.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select></div>
+        <div style="flex:1"><label for="value">Value as printed on the original</label><input type="text" id="value" name="value" style="width:100%"></div>
+        <button class="btn ghost">Save and re-check</button>
+      </form>
+    </details>
+    {% endif %}
+
+    {% if history %}<h2>History of this application</h2>
+    <div class="tablewrap"><table class="audit"><tr><th>When</th><th>Who</th><th>What</th><th>Result</th></tr>
+    {% for h in history %}<tr><td>{{ h.at|replace('T',' ') }}</td><td>{{ h.actor }}</td><td>{{ h.action|replace('_',' ') }}</td><td>{{ h.outcome }}</td></tr>{% endfor %}
+    </table></div>{% endif %}
+  </div>
+</div>
+<script>
+// Pointing at a finding lights up its evidence on the receipt.
+const rects=[...document.querySelectorAll('rect.box')];
+document.querySelectorAll('.finding').forEach(el=>{
+  const id=el.dataset.rules;
+  const on=()=>rects.forEach(r=>{const m=r.dataset.rules.split(' ').includes(id);r.classList.toggle('dim',!m);r.classList.toggle('hot',m)});
+  const off=()=>rects.forEach(r=>r.classList.remove('dim','hot'));
+  el.addEventListener('mouseenter',on);el.addEventListener('focus',on);
+  el.addEventListener('mouseleave',off);el.addEventListener('blur',off);
+});
+</script>
+{% endblock %}

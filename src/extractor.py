@@ -324,7 +324,7 @@ def parse_fields(segments: List[dict], pages: List[dict]) -> Tuple[Dict[str, Any
                     parsed = parser(value)
                 put(field, parsed, vseg)
             elif field == "amount_words":
-                put(field, value, vseg)
+                put(field, value.strip("() "), vseg)
             elif field == "maturity_amount":
                 pass
             else:

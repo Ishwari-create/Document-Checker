@@ -13,7 +13,7 @@ These are synthetic receipts from three invented bank layouts. The numbers show 
 | Defective documents passed as clean | 0 |
 | Clean documents wrongly failed (false alarms) | 0 of 10 |
 | Clean documents sent to an officer for review | 1 of 10 |
-| Time per document: digital PDF / scan | 0.04 s / 1.54 s |
+| Time per document: digital PDF / scan | 0.02 s / 0.99 s |
 
 ## Field extraction
 

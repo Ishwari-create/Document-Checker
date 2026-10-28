@@ -17,9 +17,9 @@
       "Maturity date": "24/24",
       "Depositor": "24/24"
     },
-    "avg_seconds_text_pdf": 0.04,
-    "avg_seconds_scan": 1.54,
-    "total_seconds": 6.9
+    "avg_seconds_text_pdf": 0.02,
+    "avg_seconds_scan": 0.99,
+    "total_seconds": 4.4
   },
   "per_rule": [
     {
@@ -128,7 +128,7 @@
         "R1"
       ],
       "review_rules": [],
-      "seconds": 1.5,
+      "seconds": 1.03,
       "note": "Drawn in favour of the trust secretary",
       "read_problems": []
     },
@@ -182,7 +182,7 @@
         "R6"
       ],
       "review_rules": [],
-      "seconds": 0.03,
+      "seconds": 0.02,
       "note": "Old FDR of 2014 that matured in 2024, re-submitted",
       "read_problems": []
     },
@@ -200,7 +200,7 @@
         "R5"
       ],
       "review_rules": [],
-      "seconds": 1.49,
+      "seconds": 0.98,
       "note": "Different institute's name",
       "read_problems": []
     },
@@ -214,7 +214,7 @@
       "expected_rules": [],
       "failed_rules": [],
       "review_rules": [],
-      "seconds": 0.04,
+      "seconds": 0.03,
       "note": "",
       "read_problems": []
     },
@@ -234,7 +234,7 @@
         "R9"
       ],
       "review_rules": [],
-      "seconds": 0.04,
+      "seconds": 0.02,
       "note": "Figures overwritten to 35 L; words still read 25 L; bank record says 25 L",
       "read_problems": []
     },
@@ -248,7 +248,7 @@
       "expected_rules": [],
       "failed_rules": [],
       "review_rules": [],
-      "seconds": 0.03,
+      "seconds": 0.02,
       "note": "",
       "read_problems": []
     },
@@ -266,7 +266,7 @@
         "R5"
       ],
       "review_rules": [],
-      "seconds": 0.04,
+      "seconds": 0.02,
       "note": "Deposit made by an unrelated company",
       "read_problems": []
     },
@@ -280,7 +280,7 @@
       "expected_rules": [],
       "failed_rules": [],
       "review_rules": [],
-      "seconds": 0.04,
+      "seconds": 0.02,
       "note": "",
       "read_problems": []
     },
@@ -298,7 +298,7 @@
         "R4"
       ],
       "review_rules": [],
-      "seconds": 0.04,
+      "seconds": 0.02,
       "note": "Women's college slab is 28 L; FDR is 25 L",
       "read_problems": []
     },
@@ -316,7 +316,7 @@
         "R3"
       ],
       "review_rules": [],
-      "seconds": 0.04,
+      "seconds": 0.02,
       "note": "8 years: follows the older instruction, not the 10-year SD period",
       "read_problems": []
     },
@@ -330,7 +330,7 @@
       "expected_rules": [],
       "failed_rules": [],
       "review_rules": [],
-      "seconds": 0.04,
+      "seconds": 0.02,
       "note": "",
       "read_problems": []
     },
@@ -350,7 +350,7 @@
       "review_rules": [
         "R9"
       ],
-      "seconds": 0.03,
+      "seconds": 0.02,
       "note": "Co-operative bank",
       "read_problems": []
     },
@@ -364,7 +364,7 @@
       "expected_rules": [],
       "failed_rules": [],
       "review_rules": [],
-      "seconds": 0.03,
+      "seconds": 0.02,
       "note": "",
       "read_problems": []
     },
@@ -382,7 +382,7 @@
         "R3"
       ],
       "review_rules": [],
-      "seconds": 0.03,
+      "seconds": 0.02,
       "note": "5 years",
       "read_problems": []
     },
@@ -396,7 +396,7 @@
       "expected_rules": [],
       "failed_rules": [],
       "review_rules": [],
-      "seconds": 0.04,
+      "seconds": 0.03,
       "note": "",
       "read_problems": []
     },
@@ -410,7 +410,7 @@
       "expected_rules": [],
       "failed_rules": [],
       "review_rules": [],
-      "seconds": 0.04,
+      "seconds": 0.02,
       "note": "",
       "read_problems": []
     },
@@ -428,7 +428,7 @@
         "R1"
       ],
       "review_rules": [],
-      "seconds": 0.04,
+      "seconds": 0.02,
       "note": "Drawn in favour of the college itself",
       "read_problems": []
     },
@@ -446,7 +446,7 @@
         "R9"
       ],
       "review_rules": [],
-      "seconds": 0.04,
+      "seconds": 0.02,
       "note": "Receipt is internally consistent, but the bank's record shows Rs. 3,50,000",
       "read_problems": []
     },
@@ -460,7 +460,7 @@
       "expected_rules": [],
       "failed_rules": [],
       "review_rules": [],
-      "seconds": 0.04,
+      "seconds": 0.02,
       "note": "",
       "read_problems": []
     },
@@ -474,7 +474,7 @@
       "expected_rules": [],
       "failed_rules": [],
       "review_rules": [],
-      "seconds": 1.49,
+      "seconds": 0.94,
       "note": "",
       "read_problems": []
     },
@@ -491,7 +491,7 @@
         "R1",
         "R9"
       ],
-      "seconds": 1.7,
+      "seconds": 1.0,
       "note": "",
       "read_problems": [
         "FDR number",
@@ -514,7 +514,7 @@
       "review_rules": [
         "R9"
       ],
-      "seconds": 0.04,
+      "seconds": 0.03,
       "note": "NBFC, not a bank",
       "read_problems": []
     }

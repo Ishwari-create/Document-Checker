@@ -25,10 +25,11 @@ try:
 except ImportError:  # pragma: no cover
     PDFPLUMBER_AVAILABLE = False
 
+from .render import ocr_available, render_pages
+
 try:
     import pytesseract
-    from pdf2image import convert_from_bytes
-    OCR_AVAILABLE = True
+    OCR_AVAILABLE = ocr_available()       # needs the Tesseract program, not just the Python package
 except ImportError:  # pragma: no cover
     OCR_AVAILABLE = False
 
@@ -115,7 +116,7 @@ def _segments_from_text_layer(data: bytes) -> Tuple[List[dict], List[dict]]:
 def _segments_from_ocr(data: bytes) -> Tuple[List[dict], List[dict], float]:
     segments, pages, confs = [], [], []
     scale = 72.0 / OCR_DPI
-    for i, img in enumerate(convert_from_bytes(data, dpi=OCR_DPI)):
+    for i, img in enumerate(render_pages(data, OCR_DPI)):
         pages.append({"page": i, "width": img.width * scale, "height": img.height * scale})
         # Photocopies carry speckle; a median filter removes dots without eating strokes.
         clean = ImageOps.autocontrast(img.convert("L").filter(ImageFilter.MedianFilter(3)))
@@ -169,7 +170,7 @@ def read_document(src: PdfSource) -> Dict[str, Any]:
                     "read_quality": round(q, 2), "bytes": data}
         except Exception:
             pass
-    return {"segments": segments, "pages": pages, "method": "unreadable",
+    return {"segments": segments, "pages": pages, "method": "unreadable" if OCR_AVAILABLE else "ocr-missing",
             "read_quality": 0.0, "bytes": data}
 
 

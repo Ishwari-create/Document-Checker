@@ -23,12 +23,13 @@ from datetime import date, timedelta
 from pathlib import Path
 
 from PIL import Image, ImageFilter
-from pdf2image import convert_from_bytes
 from reportlab.lib.colors import Color, black
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.pdfgen import canvas
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
+from src.render import render_pages  # noqa: E402
 OUT = ROOT / "data" / "test_documents"
 APPS = {a["app_id"]: a for a in json.loads((ROOT / "data" / "applications.json").read_text())["applications"]}
 rng = random.Random(26261)
@@ -218,7 +219,7 @@ def render_pdf(d: dict) -> bytes:
 def rasterise(pdf_bytes: bytes, seed: int) -> bytes:
     """Simulate a photocopy scan: 150 dpi, grey, slight skew, blur and speckle."""
     r = random.Random(seed)
-    img = convert_from_bytes(pdf_bytes, dpi=150)[0].convert("L")
+    img = render_pages(pdf_bytes, 150, last_page=1)[0].convert("L")
     img = img.rotate(r.uniform(-1.2, 1.2), expand=False, fillcolor=255)
     img = img.filter(ImageFilter.GaussianBlur(0.6))
     px = img.load()

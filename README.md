@@ -73,7 +73,7 @@ All data is synthetic and marked SAMPLE - TEST DATA. These numbers show the meth
 
 ## Run it
 
-Needs Python 3.10+, `tesseract-ocr` and `poppler-utils`.
+Needs Python 3.10+. `pip install -r requirements.txt` is enough to run everything on digital PDFs, on Windows too. Scanned receipts also need the Tesseract OCR program (`conda install -c conda-forge tesseract`, or `apt install tesseract-ocr`); without it, scans are sent to the officer instead of being read. Poppler is optional.
 
 ```bash
 pip install -r requirements.txt

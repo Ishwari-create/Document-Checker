@@ -31,11 +31,11 @@ import os
 import yaml
 from flask import Flask, Response, abort, g, jsonify, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash
-from pdf2image import convert_from_bytes
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
+from src.render import render_pages                           # noqa: E402
 from src.deficiency import generate_deficiency_letter          # noqa: E402
 from src.pipeline import load_applications, run_check          # noqa: E402
 from src.registry import IssuerConnector, Ledger               # noqa: E402
@@ -107,7 +107,7 @@ OVERALL_TEXT = {"PASS": "No deficiency found", "FAIL": "Deficiency found", "UNCE
 # ---------------------------------------------------------------------------
 def page_image(sha: str, pdf: bytes) -> str:
     if sha not in PAGE_CACHE:
-        img = convert_from_bytes(pdf, dpi=110, first_page=1, last_page=1)[0]
+        img = render_pages(pdf, 110, last_page=1)[0]
         buf = io.BytesIO()
         img.convert("RGB").save(buf, "JPEG", quality=82)
         PAGE_CACHE[sha] = "data:image/jpeg;base64," + base64.b64encode(buf.getvalue()).decode()

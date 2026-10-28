@@ -28,14 +28,40 @@ Every finding shows the evidence (with a box on the receipt), the clause, and wh
 
 The system never rejects anything. A failed check becomes a point for the officer, who confirms or overrules it (overruling needs a reason), and only confirmed points go into the draft deficiency letter. Every automated check and every officer decision is logged with the file's SHA-256 and the rule version.
 
+## Who uses it
+
+Sign in at `/login`. Demo accounts (replace with the AICTE portal's own sign-in for real use):
+
+| Role | Username / password | Can do |
+|---|---|---|
+| Scrutiny officer | officer / officer123 | Queue, scrutiny, corrections, decisions, letters, audit trail |
+| Auditor | auditor / auditor123 | Audit trail only |
+| Institute | sahyadri or vindhya / inst123 | Self-check of its own application only |
+
 ## Screens
 
 - **Received FDRs**: queue, cases needing a person first
-- **Scrutiny view**: receipt with evidence boxes, findings, officer decision, history
+- **Scrutiny view**: receipt with evidence boxes, findings, officer decision, history. If a scan was misread, the officer corrects the value and the checks run again; the correction is logged
 - **Check a receipt**: upload a new one against an application
 - **Institute self-check**: the same checks in plain language for the institute, before it submits; nothing stored
 - **Try to fool it**: make one edit to a good receipt and watch the checker catch it
 - **Test results**, **Rules**, **Audit trail**
+
+## Connecting to the AICTE portal
+
+The portal can send each receipt to the checker as soon as an institute uploads it:
+
+```bash
+curl -H "Authorization: Bearer $API_TOKEN" \
+     -F pdf=@receipt.pdf -F app_id=1-SYN-2026-0101 -F received=2026-05-02 \
+     http://localhost:8501/api/v1/check
+```
+
+It returns the overall finding, each rule's status, evidence and clause, the extracted fields with their location on the page, and the rule version. Instead of `app_id` the portal can send its own application record as JSON in `application`. `GET /api/v1/rules` returns the rules in force. Set `API_TOKEN` and `SECRET_KEY` as environment variables before deploying.
+
+## Privacy
+
+FDR numbers are not stored. The reuse ledger keeps only a SHA-256 of bank + FDR number, which is enough to spot the same deposit twice. Institute self-checks are not stored at all. Demo passwords are salted hashes.
 
 ## Results
 

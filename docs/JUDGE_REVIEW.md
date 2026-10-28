@@ -35,7 +35,10 @@ Yes. The rules and field labels are data; the engine and screens are generic. Th
 They might; both are tagged *to confirm* on screen and in the rules file. One line changes each, and every past check records which rule version it used.
 
 **"What about privacy?"**
-FDR numbers are financial identifiers. The self-check screen stores nothing. Next step: mask account numbers in the audit log and on screens for roles that do not need them.
+FDR numbers are financial identifiers, so the ledger stores only a hash of bank + number, which still catches reuse. Self-checks store nothing. Roles limit who sees what: institutes see only their own application, auditors only the audit trail.
+
+**"How would AICTE actually use this?"**
+The portal calls `POST /api/v1/check` when a receipt is uploaded and shows the findings in the officer's existing screen, or officers use our screens directly. If OCR misreads a value, the officer corrects it and the rules re-run; the correction goes into the audit trail.
 
 **"How long does it take?"**
 About 0.05 s for a digital PDF and 1.5 s for a scan on a laptop.
@@ -44,8 +47,8 @@ About 0.05 s for a digital PDF and 1.5 s for a scan on a laptop.
 
 1. Confirm tenure and amounts against the APH 2024-27 PDF.
 2. Get 30 to 50 real, anonymised FDR scans from one Regional Office and measure on those.
-3. Role-based login (officer / institute / auditor); right now the screens are open.
-4. Mask FDR and account numbers outside the officer view.
+3. Replace the demo accounts with the AICTE portal's single sign-on (roles already enforced: officer, auditor, institute).
+4. Move cases from memory to the database so they survive a restart (the ledger and audit trail already do).
 5. Second rule pack (affidavit or fire NOC) to prove the "any document" claim.
 
 ## Questions to be ready for (60 seconds each)

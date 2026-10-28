@@ -380,7 +380,7 @@ def r10_reuse(f, cfg, ctx, env):
         return _v(cfg, "PASS", f"FDR {f.get('fdr_number') or '(number unread)'} and file hash not seen in any "
                   "other application.", "No reuse found.", ["fdr_number"])
     h = hits[0]
-    how = "the identical file" if h["same_file"] else f"the same FDR number {h['fdr_number']}"
+    how = "the identical file" if h["same_file"] else f"the same FDR number ({f.get('fdr_number')})"
     return _v(cfg, "FAIL", f"{how} was submitted for application {h['app_id']} on {h['submitted_at']}",
               "One deposit is being used to back two applications.", ["fdr_number"], cfg["fix_hint"],
               ps_status="Duplicate detected")

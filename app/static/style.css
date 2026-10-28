@@ -95,3 +95,7 @@ code{font-size:.85em;background:#ECEFEA;padding:1px 4px;border-radius:2px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:24px}
 @media (max-width:900px){.bar{gap:.4rem 1rem;padding:6px 16px}.bar nav{gap:.2rem 1rem}.bar nav a{padding:4px 0;font-size:.88rem}main{padding:16px}.split,.grid2{grid-template-columns:1fr}.receipt{position:static}.casehead{grid-template-columns:1fr}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.bar .who{margin-left:auto;font-size:.85rem;opacity:.9}
+.bar .who a{color:#fff;margin-left:.6rem}
+details.panel summary{cursor:pointer}
+input[type=password]{font:inherit;font-size:.93rem;padding:7px 9px;border:1px solid #B9C0B6;border-radius:3px}

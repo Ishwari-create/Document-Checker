@@ -2,7 +2,8 @@
 {% block body %}
 <h1>Draft deficiency letter</h1>
 <p class="muted">{{ c.app.institute_name }}, built only from the points the officer confirmed. Edit before issue.</p>
-<p><a class="btn" href="{{ url_for('letter', case_id=c.id, download=1) }}">Download as text</a>
+<p><a class="btn" href="{{ url_for('letter_pdf', case_id=c.id) }}">Download PDF</a>
+   <a class="btn ghost" href="{{ url_for('letter', case_id=c.id, download=1) }}">Download as text</a>
    <a class="btn ghost" href="{{ url_for('check', case_id=c.id) }}">Back to the case</a></p>
 <pre class="letter">{{ text }}</pre>
 {% endblock %}

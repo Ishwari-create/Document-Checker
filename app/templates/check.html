@@ -47,7 +47,7 @@
       <div class="panel">
         <h3>Officer decision</h3>
         <p class="small muted">The system does not reject anything. Confirm or overrule each point above, then record what happens next.</p>
-        <div class="row"><div><label for="officer">Officer name</label><input type="text" id="officer" name="officer" placeholder="e.g. A. Kulkarni, RO Pune"></div></div>
+        <p class="small">Recorded as <b>{{ user.name }}</b>.</p>
         <div class="row">
           <button class="btn" name="action" value="accept">Accept FDR</button>
           <button class="btn warn" name="action" value="letter">Prepare deficiency letter</button>
@@ -56,6 +56,18 @@
       </div>
     {% endif %}
     </form>
+
+    {% if c.origin != 'fool' %}
+    <details class="panel" {% if c.corrections is defined %}open{% endif %}>
+      <summary><b>Correct a misread value</b> <span class="small muted">when the scan was read wrongly; the checks run again</span></summary>
+      {% if c.corrections is defined %}<ul class="small">{% for k in c.corrections %}<li>{{ k.field }}: "{{ k.old }}" changed to "{{ k.new }}" by {{ k.by }}</li>{% endfor %}</ul>{% endif %}
+      <form method="post" action="{{ url_for('correct', case_id=c.id) }}" class="row" style="margin-top:10px">
+        <div><label for="field">Field</label><select id="field" name="field">{% for k,v in correctable.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select></div>
+        <div style="flex:1"><label for="value">Value as printed on the original</label><input type="text" id="value" name="value" style="width:100%"></div>
+        <button class="btn ghost">Save and re-check</button>
+      </form>
+    </details>
+    {% endif %}
 
     {% if history %}<h2>History of this application</h2>
     <div class="tablewrap"><table class="audit"><tr><th>When</th><th>Who</th><th>What</th><th>Result</th></tr>

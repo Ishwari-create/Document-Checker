@@ -30,6 +30,14 @@ def sha256_of(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
+def fdr_key(bank: Optional[str], fdr_number: Optional[str]) -> Optional[str]:
+    """The ledger stores this hash instead of the FDR number, so reuse can be detected
+    without keeping a list of financial instrument numbers."""
+    if not fdr_number:
+        return None
+    return hashlib.sha256(f"{_norm(bank)}|{fdr_number.strip().upper()}".encode()).hexdigest()
+
+
 def _norm(s: Optional[str]) -> str:
     return " ".join((s or "").lower().replace(".", " ").replace(",", " ").split())
 
@@ -62,6 +70,7 @@ class IssuerConnector:
 class Ledger:
     def __init__(self, db_path: Optional[Path] = DEFAULT_DB):
         self.conn = sqlite3.connect(str(db_path) if db_path else ":memory:", check_same_thread=False)
+        # submissions.fdr_number holds fdr_key(), not the raw number
         self.conn.executescript("""
             CREATE TABLE IF NOT EXISTS submissions (
                 id INTEGER PRIMARY KEY, app_id TEXT, fdr_number TEXT, bank TEXT,
@@ -73,21 +82,19 @@ class Ledger:
 
     # -- duplicates ---------------------------------------------------------
     def find_reuse(self, app_id: str, fdr_number: Optional[str], bank: Optional[str], sha: str) -> List[dict]:
+        key = fdr_key(bank, fdr_number)
         rows = self.conn.execute(
-            "SELECT app_id, fdr_number, bank, sha256, submitted_at FROM submissions "
+            "SELECT app_id, fdr_number, sha256, submitted_at FROM submissions "
             "WHERE app_id != ? AND (sha256 = ? OR (fdr_number = ? AND fdr_number IS NOT NULL))",
-            (app_id, sha, fdr_number)).fetchall()
-        out = []
-        for a, f, b, h, t in rows:
-            if h == sha or _norm(b) == _norm(bank) or not bank:
-                out.append({"app_id": a, "fdr_number": f, "same_file": h == sha, "submitted_at": t})
-        return out
+            (app_id, sha, key)).fetchall()
+        return [{"app_id": a, "same_file": h == sha, "same_number": k == key and key is not None,
+                 "submitted_at": t} for a, k, h, t in rows]
 
     def record_submission(self, app_id: str, fdr_number: Optional[str], bank: Optional[str], sha: str):
         exists = self.conn.execute("SELECT 1 FROM submissions WHERE app_id=? AND sha256=?", (app_id, sha)).fetchone()
         if not exists:
             self.conn.execute("INSERT INTO submissions (app_id, fdr_number, bank, sha256, submitted_at) "
-                              "VALUES (?,?,?,?,?)", (app_id, fdr_number, bank, sha,
+                              "VALUES (?,?,?,?,?)", (app_id, fdr_key(bank, fdr_number), _norm(bank), sha,
                                                     datetime.now().isoformat(timespec="seconds")))
             self.conn.commit()
 

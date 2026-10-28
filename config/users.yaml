@@ -1,0 +1,22 @@
+# Demo accounts for the prototype. Passwords are stored as salted hashes.
+# Demo passwords: officer123, auditor123, inst123 (institute logins). Replace before any real use;
+# production would sign in through the AICTE portal's own login (SSO) instead of this file.
+users:
+  - username: officer
+    name: "A. Kulkarni, Regional Office Pune"
+    role: officer
+    password_hash: "scrypt:32768:8:1$3BZ0kjTtBQbS09iL$5e4f2d15e1a7322a595d36a8f56d9bfcacf2abec607cc2503b6aed58b73eed9738a612e580205b32fc0b847ec2eab7b0f1fb743f50dd70b220ed09fedfba0b80"
+  - username: auditor
+    name: "Internal audit cell"
+    role: auditor
+    password_hash: "scrypt:32768:8:1$8jhSGxZ5jOeZ1Xek$39d6c5b0fa844c53ae8bee085a6ebdd4893ff4134803a376a4d946819a9f07474ea34c04dd3f463d572eeb8708533b668453295f707b5b5edb61feabc5ca10ea"
+  - username: sahyadri
+    name: "Sahyadri Institute of Engineering and Research"
+    role: institute
+    password_hash: "scrypt:32768:8:1$vZNwLkzmJFlgkXIz$be37e02be03663bb939c7e9423d6b58300c10b7b7d4425d8896f10d659f65c4d88452525b2d722cd1beffd01445511b2239fda62068f1ff3781e6f5ce52d1d5b"
+    app_id: "1-SYN-2026-0101"
+  - username: vindhya
+    name: "Vindhya Institute of Technology and Management"
+    role: institute
+    password_hash: "scrypt:32768:8:1$TTHuYbWRPLiaJLI5$9d5261d96a41b6e45d3084914c42089cf31cfa8db7f5b06b1109305c2bb561bb1fbc24f01937b1bdd40110737a8b2fd7e47b62abe40e6f7b6f0a982683fdb21e"
+    app_id: "1-SYN-2026-0105"

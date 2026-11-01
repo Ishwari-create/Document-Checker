@@ -1,0 +1,194 @@
+{
+  "summary": {
+    "photos": 19,
+    "problems_caught_by_right_rule": "3/3",
+    "edited_or_forwarded_sent_to_officer": "2/2",
+    "clean_wrongly_flagged": 0,
+    "accuracy": 1.0
+  },
+  "photos": [
+    {
+      "photo": "PH-01",
+      "room": "Classroom",
+      "defect": "none",
+      "truth": "PASS",
+      "system": "PASS",
+      "failed_rules": [],
+      "expected_rules": []
+    },
+    {
+      "photo": "PH-02",
+      "room": "Laboratory",
+      "defect": "none",
+      "truth": "PASS",
+      "system": "PASS",
+      "failed_rules": [],
+      "expected_rules": []
+    },
+    {
+      "photo": "PH-03",
+      "room": "Library",
+      "defect": "none",
+      "truth": "PASS",
+      "system": "PASS",
+      "failed_rules": [],
+      "expected_rules": []
+    },
+    {
+      "photo": "PH-04",
+      "room": "Classroom",
+      "defect": "none",
+      "truth": "PASS",
+      "system": "PASS",
+      "failed_rules": [],
+      "expected_rules": []
+    },
+    {
+      "photo": "PH-05",
+      "room": "Laboratory",
+      "defect": "none",
+      "truth": "PASS",
+      "system": "PASS",
+      "failed_rules": [],
+      "expected_rules": []
+    },
+    {
+      "photo": "PH-06",
+      "room": "Library",
+      "defect": "none",
+      "truth": "PASS",
+      "system": "PASS",
+      "failed_rules": [],
+      "expected_rules": []
+    },
+    {
+      "photo": "PH-07",
+      "room": "Classroom",
+      "defect": "none",
+      "truth": "PASS",
+      "system": "PASS",
+      "failed_rules": [],
+      "expected_rules": []
+    },
+    {
+      "photo": "PH-08",
+      "room": "Laboratory",
+      "defect": "none",
+      "truth": "PASS",
+      "system": "PASS",
+      "failed_rules": [],
+      "expected_rules": []
+    },
+    {
+      "photo": "PH-09",
+      "room": "Library",
+      "defect": "none",
+      "truth": "PASS",
+      "system": "PASS",
+      "failed_rules": [],
+      "expected_rules": []
+    },
+    {
+      "photo": "PH-10",
+      "room": "Classroom",
+      "defect": "none",
+      "truth": "PASS",
+      "system": "PASS",
+      "failed_rules": [],
+      "expected_rules": []
+    },
+    {
+      "photo": "PH-11",
+      "room": "Laboratory",
+      "defect": "none",
+      "truth": "PASS",
+      "system": "PASS",
+      "failed_rules": [],
+      "expected_rules": []
+    },
+    {
+      "photo": "PH-12",
+      "room": "Library",
+      "defect": "none",
+      "truth": "PASS",
+      "system": "PASS",
+      "failed_rules": [],
+      "expected_rules": []
+    },
+    {
+      "photo": "PH-13",
+      "room": "Classroom",
+      "defect": "none",
+      "truth": "PASS",
+      "system": "PASS",
+      "failed_rules": [],
+      "expected_rules": []
+    },
+    {
+      "photo": "PH-14",
+      "room": "Laboratory",
+      "defect": "old",
+      "truth": "FAIL",
+      "system": "FAIL",
+      "failed_rules": [
+        "P1"
+      ],
+      "expected_rules": [
+        "P1"
+      ]
+    },
+    {
+      "photo": "PH-15",
+      "room": "Library",
+      "defect": "none",
+      "truth": "PASS",
+      "system": "PASS",
+      "failed_rules": [],
+      "expected_rules": []
+    },
+    {
+      "photo": "PH-16",
+      "room": "Laboratory",
+      "defect": "far",
+      "truth": "FAIL",
+      "system": "FAIL",
+      "failed_rules": [
+        "P2"
+      ],
+      "expected_rules": [
+        "P2"
+      ]
+    },
+    {
+      "photo": "PH-17",
+      "room": "Library",
+      "defect": "reused",
+      "truth": "FAIL",
+      "system": "FAIL",
+      "failed_rules": [
+        "P3"
+      ],
+      "expected_rules": [
+        "P3"
+      ]
+    },
+    {
+      "photo": "PH-18",
+      "room": "Classroom",
+      "defect": "edited",
+      "truth": "UNCERTAIN",
+      "system": "UNCERTAIN",
+      "failed_rules": [],
+      "expected_rules": []
+    },
+    {
+      "photo": "PH-19",
+      "room": "Classroom",
+      "defect": "forwarded",
+      "truth": "UNCERTAIN",
+      "system": "UNCERTAIN",
+      "failed_rules": [],
+      "expected_rules": []
+    }
+  ]
+}

@@ -1,5 +1,5 @@
 {
-  "_note": "SYNTHETIC application records standing in for the AICTE portal. All institutes are fictional. Email addresses use the reserved .example domain.",
+  "_note": "SYNTHETIC application records standing in for the AICTE portal. All institutes are fictional. Email addresses use the reserved .example domain. Campus coordinates are approximate points in each city, used only for the photo location check.",
   "applications": [
     {
       "app_id": "1-SYN-2026-0101",
@@ -14,7 +14,9 @@
       "state": "Maharashtra",
       "address": "Survey No. 41, Narhe Road, Pune 411041",
       "pincode": "411041",
-      "contact_email": "principal@sioear.example.in"
+      "contact_email": "principal@sioear.example.in",
+      "campus_lat": 18.4529,
+      "campus_lon": 73.8172
     },
     {
       "app_id": "1-SYN-2026-0102",
@@ -29,7 +31,9 @@
       "state": "Gujarat",
       "address": "Near GIDC Phase 2, Bharuch 392015",
       "pincode": "392015",
-      "contact_email": "principal@ncop.example.in"
+      "contact_email": "principal@ncop.example.in",
+      "campus_lat": 21.7051,
+      "campus_lon": 72.9959
     },
     {
       "app_id": "1-SYN-2026-0103",
@@ -44,7 +48,9 @@
       "state": "Telangana",
       "address": "Plot 7, Kondapur Main Road, Hyderabad 500084",
       "pincode": "500084",
-      "contact_email": "principal@gioms.example.in"
+      "contact_email": "principal@gioms.example.in",
+      "campus_lat": 17.4637,
+      "campus_lon": 78.357
     },
     {
       "app_id": "1-SYN-2026-0104",
@@ -59,7 +65,9 @@
       "state": "Karnataka",
       "address": "Kanakapura Road, Bengaluru 560062",
       "pincode": "560062",
-      "contact_email": "principal@kwcoe.example.in"
+      "contact_email": "principal@kwcoe.example.in",
+      "campus_lat": 12.8797,
+      "campus_lon": 77.5446
     },
     {
       "app_id": "1-SYN-2026-0105",
@@ -75,7 +83,9 @@
       "state": "Madhya Pradesh",
       "address": "Bypass Road, Bhopal 462038",
       "pincode": "462038",
-      "contact_email": "principal@viotam.example.in"
+      "contact_email": "principal@viotam.example.in",
+      "campus_lat": 23.2156,
+      "campus_lon": 77.4304
     },
     {
       "app_id": "1-SYN-2026-0106",
@@ -90,7 +100,9 @@
       "state": "Assam",
       "address": "Jalukbari, Guwahati 781014",
       "pincode": "781014",
-      "contact_email": "principal@bsoa.example.in"
+      "contact_email": "principal@bsoa.example.in",
+      "campus_lat": 26.1433,
+      "campus_lon": 91.7362
     },
     {
       "app_id": "1-SYN-2026-0107",
@@ -105,7 +117,9 @@
       "state": "Punjab",
       "address": "GT Road, Bathinda 151001",
       "pincode": "151001",
-      "contact_email": "principal@mcoca.example.in"
+      "contact_email": "principal@mcoca.example.in",
+      "campus_lat": 30.211,
+      "campus_lon": 74.9455
     },
     {
       "app_id": "1-SYN-2026-0108",
@@ -120,7 +134,9 @@
       "state": "Maharashtra",
       "address": "Ring Road, Surat Naka, Jalgaon 425001",
       "pincode": "425001",
-      "contact_email": "principal@tiohm.example.in"
+      "contact_email": "principal@tiohm.example.in",
+      "campus_lat": 21.0077,
+      "campus_lon": 75.5626
     },
     {
       "app_id": "1-SYN-2026-0109",
@@ -135,7 +151,9 @@
       "state": "Himachal Pradesh",
       "address": "Kangra Road, Dharamshala 176215",
       "pincode": "176215",
-      "contact_email": "principal@scoe.example.in"
+      "contact_email": "principal@scoe.example.in",
+      "campus_lat": 32.219,
+      "campus_lon": 76.3234
     },
     {
       "app_id": "1-SYN-2026-0110",
@@ -150,7 +168,9 @@
       "state": "Odisha",
       "address": "Chandrasekharpur, Bhubaneswar 751024",
       "pincode": "751024",
-      "contact_email": "principal@ciops.example.in"
+      "contact_email": "principal@ciops.example.in",
+      "campus_lat": 20.2961,
+      "campus_lon": 85.8245
     },
     {
       "app_id": "1-SYN-2026-0111",
@@ -165,7 +185,9 @@
       "state": "Rajasthan",
       "address": "Sitapura Industrial Area, Jaipur 302022",
       "pincode": "302022",
-      "contact_email": "principal@abs.example.in"
+      "contact_email": "principal@abs.example.in",
+      "campus_lat": 26.8467,
+      "campus_lon": 75.8061
     },
     {
       "app_id": "1-SYN-2026-0112",
@@ -180,7 +202,9 @@
       "state": "Maharashtra",
       "address": "Wardha Road, Nagpur 441108",
       "pincode": "441108",
-      "contact_email": "principal@pviot.example.in"
+      "contact_email": "principal@pviot.example.in",
+      "campus_lat": 21.095,
+      "campus_lon": 79.048
     },
     {
       "app_id": "1-SYN-2026-0113",
@@ -195,7 +219,9 @@
       "state": "Maharashtra",
       "address": "Sinhagad Road, Pune 411041",
       "pincode": "411041",
-      "contact_email": "principal@gps.example.in"
+      "contact_email": "principal@gps.example.in",
+      "campus_lat": 18.4612,
+      "campus_lon": 73.8335
     }
   ]
 }

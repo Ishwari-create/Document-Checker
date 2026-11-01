@@ -40,6 +40,17 @@
 <h2>Second rule pack: Fire NOC</h2>
 <p class="small">{{ noc.summary.documents }} synthetic Fire NOCs (4 correct; expired, wrong institute, wrong premises, not a fire authority). Document type recognised: {{ noc.summary.type_recognised }}/{{ noc.summary.documents }}. Defects caught by the right rule: {{ noc.summary.defects_caught_by_right_rule }}. Correct NOCs wrongly failed: {{ noc.summary.clean_wrongly_failed }}.</p>
 {% endif %}
+{% if aff %}
+<h2>Third rule pack: Affidavit by the Trust / Society</h2>
+<p class="small">{{ aff.summary.documents }} synthetic affidavits (5 correct, one of them scanned; stamp paper too low, no notary, deponent not an office-bearer, too old, an undertaking left out). Type recognised: {{ aff.summary.type_recognised }}/{{ aff.summary.documents }}. Defects caught by the right rule: {{ aff.summary.defects_caught_by_right_rule }}. Correct affidavits wrongly failed: {{ aff.summary.clean_wrongly_failed }}.</p>
+{% endif %}
+{% if photos %}
+<h2>Infrastructure photographs</h2>
+<p class="small">{{ photos.summary.photos }} synthetic room photographs. Old, taken in another city, and reused from another application (resized and re-saved): {{ photos.summary.problems_caught_by_right_rule }} caught. Edited in Photoshop or forwarded without camera data: {{ photos.summary.edited_or_forwarded_sent_to_officer }} sent to an officer. Correct photos wrongly flagged: {{ photos.summary.clean_wrongly_flagged }}. The photos are drawings, not camera pictures; the date, location and reuse checks work on the file data and the picture itself, which is why they carry over to real photos.</p>
+{% endif %}
+<h2>Time saved: measured, not assumed</h2>
+{% if study.saved_pct is defined %}<p>By hand: {{ study.manual.mean_min }} min per receipt ({{ study.manual.caught }} defects found, {{ study.manual.files }} files). With the desk: {{ study.assisted.mean_min }} min ({{ study.assisted.caught }} found, {{ study.assisted.files }} files). <b>{{ study.saved_pct }}% less time per file.</b> <a href="{{ url_for('study') }}">Details</a></p>
+{% else %}<p class="small">Not measured yet. <a href="{{ url_for('study') }}">Run the time study</a>: each person checks receipts by hand and with the desk, every file is timed and scored against the planted defect.</p>{% endif %}
 <h2>Every document</h2><div class="tablewrap"><table>
 <tr><th>Receipt</th><th>Planted defect</th><th>Expected</th><th>System</th><th>Failed</th><th>To review</th></tr>
 {% for r in ev.documents %}<tr><td><a href="{{ url_for('check', case_id=r.doc) }}">{{ r.doc }}</a>{% if r.scanned %} <span class="muted small">scan</span>{% endif %}</td>

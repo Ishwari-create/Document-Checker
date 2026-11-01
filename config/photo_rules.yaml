@@ -1,0 +1,54 @@
+pack: photos
+version: "2026.11-p1"
+document_label: "Infrastructure photographs"
+
+# What the institute must upload, per application (used by the application view).
+required_rooms: ["Classroom", "Laboratory", "Library"]
+rooms: ["Classroom", "Laboratory", "Library", "Workshop", "Seminar hall", "Building front", "Hostel", "Other"]
+
+sources:
+  APH_INFRA: >-
+    AICTE Approval Process Handbook: geo-tagged photographs / videos of the built-up
+    infrastructure are uploaded with the application (exact clause to confirm)
+  PS: "SIH26261 brief: verify infrastructure evidence using computer vision"
+  PRACTICE: "Standard scrutiny check, not a handbook clause"
+
+rules:
+  - id: P1
+    name: "Photo taken recently"
+    problem: "Old photograph"
+    severity: FATAL
+    source: APH_INFRA
+    clause: "APH: geo-tagged photographs (to confirm)"
+    verified: false
+    max_age_days: 180
+    fix_hint: "Upload photographs taken during the current approval cycle (within the last 6 months), straight from the camera."
+  - id: P2
+    name: "Taken at the campus"
+    problem: "Photograph taken away from the campus"
+    severity: FATAL
+    source: APH_INFRA
+    clause: "APH: geo-tagged photographs (to confirm)"
+    verified: false
+    pass_km: 1.0
+    review_km: 5.0
+    fix_hint: "Take the photographs on the campus with location (GPS) switched on, and upload the original file."
+  - id: P3
+    name: "Not the same photo as another application"
+    problem: "Photograph reused from another application"
+    severity: FATAL
+    source: PS
+    clause: "SIH26261 brief: duplicate / reused evidence"
+    verified: true
+    max_distance: 64       # of 256 hash bits: candidate filter
+    min_correlation: 0.95  # thumbnail match needed to call it the same photo
+    fix_hint: "Upload photographs of your own campus."
+  - id: P4
+    name: "Straight from a camera"
+    problem: "Edited or forwarded photograph"
+    severity: WARNING
+    source: PRACTICE
+    clause: "Preliminary indicator, officer to look"
+    verified: true
+    editors: ['photoshop', 'gimp', 'lightroom', 'snapseed', 'picsart', 'canva', 'pixlr', 'facetune', 'meitu', 'paint']
+    fix_hint: "Upload the original camera file, not an edited copy or one forwarded through a messaging app."

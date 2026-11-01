@@ -1,0 +1,11 @@
+doc_id,file,app_id,defect_type,expected_fail_rules,expected_overall,submitted_on,scanned
+AFF-T01,AFF-T01.pdf,1-SYN-2026-0101,none,,PASS,2026-04-30,False
+AFF-T02,AFF-T02.pdf,1-SYN-2026-0103,none,,PASS,2026-05-05,False
+AFF-T03,AFF-T03.pdf,1-SYN-2026-0106,none,,PASS,2026-05-12,False
+AFF-T04,AFF-T04.pdf,1-SYN-2026-0110,none,,PASS,2026-05-06,False
+AFF-T05,AFF-T05.pdf,1-SYN-2026-0102,none_scan,,PASS,2026-05-02,True
+AFF-T06,AFF-T06.pdf,1-SYN-2026-0105,low_stamp,F1,FAIL,2026-05-08,False
+AFF-T07,AFF-T07.pdf,1-SYN-2026-0107,no_notary,F2,FAIL,2026-05-10,False
+AFF-T08,AFF-T08.pdf,1-SYN-2026-0108,wrong_deponent,F3,FAIL,2026-05-14,False
+AFF-T09,AFF-T09.pdf,1-SYN-2026-0111,old_date,F5,FAIL,2026-05-16,False
+AFF-T10,AFF-T10.pdf,1-SYN-2026-0109,missing_undertaking,F6,FAIL,2026-05-01,False

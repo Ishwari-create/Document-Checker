@@ -1,0 +1,48 @@
+# Whole-application check: which documents must be present, and the checks that
+# compare documents with each other (no single document can show these).
+version: "2026.11-x1"
+
+documents:
+  - id: fdr
+    name: "Security Deposit FDR"
+    not_required_for: ["Government", "Government Aided", "Aided"]
+  - id: fire_noc
+    name: "Fire Safety NOC"
+  - id: affidavit
+    name: "Affidavit by the Trust / Society"
+  - id: photos
+    name: "Infrastructure photographs"
+
+consistency:
+  - id: X1
+    name: "Every document names the same institute"
+    problem: "Documents name different institutes"
+    severity: FATAL
+    clause: "Scrutiny practice"
+    verified: true
+    pass_score: 85
+    fix_hint: "All documents must be issued in the name of the applicant institute as registered on the portal."
+  - id: X2
+    name: "Every document points to the same campus"
+    problem: "Documents point to different premises"
+    severity: FATAL
+    clause: "Scrutiny practice"
+    verified: true
+    fix_hint: "The Fire NOC and the photographs must be of the campus given in the application."
+  - id: X3
+    name: "The same Trust / Society stands behind every document"
+    problem: "Trust / Society differs between documents"
+    severity: FATAL
+    clause: "Scrutiny practice"
+    verified: true
+    pass_score: 85
+    fix_hint: "The affidavit and the Security Deposit must come from the Trust / Society registered on the portal."
+  - id: X4
+    name: "Fire NOC is valid for the coming academic year"
+    problem: "Fire NOC lapses during the academic year"
+    severity: WARNING
+    clause: "Scrutiny practice (to confirm)"
+    verified: false
+    year_starts: "08-01"      # month-day the academic year starts
+    year_ends: "06-30"        # month-day it ends (next calendar year)
+    fix_hint: "Renew the Fire NOC so that it covers the whole academic year, or give an undertaking to renew it before expiry."

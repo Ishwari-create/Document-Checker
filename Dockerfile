@@ -6,7 +6,9 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
-RUN python tools/generate_test_docs.py && python tools/train_field_model.py && python tools/evaluate.py > /dev/null
+RUN python tools/generate_test_docs.py && python tools/train_field_model.py && python tools/generate_noc_docs.py \
+    && python tools/generate_affidavit_docs.py && python tools/generate_photos.py \
+    && python tools/evaluate.py > /dev/null && python tools/evaluate_noc.py > /dev/null && python tools/evaluate_photos.py > /dev/null
 ENV PORT=7860
 EXPOSE 7860
 CMD gunicorn -w 1 -t 120 -b 0.0.0.0:$PORT app.app:app

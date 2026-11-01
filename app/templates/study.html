@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Time study - SD Scrutiny Desk{% endblock %}
+{% block body %}
+<h1>Time study: by hand vs with the desk</h1>
+<p>This measures the time saved instead of guessing it. Each person checks receipts in two ways: <b>by hand</b> (the receipt and the application only, as today) and <b>assisted</b> (the same, plus the system's findings). Every file is timed from opening to submitting, and what the person marked is compared with the defect that was really planted.</p>
+<p class="small muted">For a fair result: use 3 or more people, at least 10 receipts each in each mode, and let half of them start with the assisted mode. Receipts are drawn from the synthetic test set, so nobody knows the answer in advance.</p>
+{% if last %}<div class="note">Last file <b>{{ last.doc }}</b> ({{ last.mode }}): {{ last.min }} min.
+  {% if last.missed %}Missed: {{ last.missed|join(', ') }}. {% endif %}{% if last.extra %}Marked but not wrong: {{ last.extra|join(', ') }}. {% endif %}
+  {% if not last.missed and not last.extra %}Exactly right.{% endif %}</div>{% endif %}
+<p style="margin:16px 0"><a class="btn" href="{{ url_for('study_next', mode='manual') }}">Check a receipt by hand</a>
+  <a class="btn ghost" href="{{ url_for('study_next', mode='assisted') }}">Check a receipt with the desk</a></p>
+{% if s %}<h2>Results so far</h2>
+<div class="tablewrap" style="max-width:820px"><table><tr><th>Mode</th><th class="num">Files</th><th class="num">Mean time</th><th class="num">Median time</th><th class="num">Defects found</th><th class="num">Wrong marks</th></tr>
+{% for m in ('manual','assisted') if m in s %}<tr><td>{{ 'By hand' if m=='manual' else 'With the desk' }}</td><td class="num">{{ s[m].files }}</td><td class="num">{{ s[m].mean_min }} min</td><td class="num">{{ s[m].median_min }} min</td><td class="num">{{ s[m].caught }}</td><td class="num">{{ s[m].false_marks }}</td></tr>{% endfor %}
+</table></div>
+{% if s.saved_pct is defined %}<p><b>Time saved per file: {{ s.saved_pct }}%.</b> Use this number, with the number of people and files, on the Impact slide.</p>{% endif %}{% endif %}
+{% if rows %}<h2>Every timed file</h2><div class="tablewrap"><table><tr><th>When</th><th>Who</th><th>Mode</th><th>Receipt</th><th class="num">Minutes</th><th>Marked</th><th>Planted</th></tr>
+{% for r in rows %}<tr><td class="small">{{ r.at }}</td><td>{{ r.user }}</td><td>{{ r.mode }}</td><td>{{ r.doc }}</td><td class="num">{{ r.min }}</td><td class="small">{{ r.marked|join(', ') or '-' }}</td><td class="small">{{ r.truth|join(', ') or 'none' }}</td></tr>{% endfor %}</table></div>{% endif %}
+{% endblock %}

@@ -19,6 +19,15 @@ def _deficient(rule_results: List[Dict[str, Any]], confirmed: Optional[Iterable[
     return [r for r in rule_results if r["status"] == "FAIL"]
 
 
+def document_reference(fields: Dict[str, Any]) -> str:
+    if "noc_number" in fields:
+        return f"NOC No. {fields.get('noc_number') or 'not readable'}, issued by {fields.get('issuing_authority') or 'not readable'}."
+    if "deponent_name" in fields:
+        return (f"Affidavit sworn by {fields.get('deponent_name') or 'deponent not readable'}"
+                f" on {fields.get('executed_on') or 'date not readable'}.")
+    return f"FDR No. {fields.get('fdr_number') or 'not readable'}, issued by {fields.get('bank_name') or 'bank not readable'}."
+
+
 def generate_deficiency_letter(fields: Dict[str, Any], rule_results: List[Dict[str, Any]],
                                application_context: Dict[str, Any], officer_name: Optional[str] = None,
                                reference_number: Optional[str] = None,
@@ -36,9 +45,7 @@ def generate_deficiency_letter(fields: Dict[str, Any], rule_results: List[Dict[s
     L += [f"Ref: {ref}", f"Date: {today:%d %B %Y}", "",
           "To", "The Principal / Director", inst, f"Application No.: {app_id}", "",
           f"Subject: Deficiencies in the {document_label or 'Security Deposit (FDR)'} submitted with your application", "",
-          (f"FDR No. {fields.get('fdr_number') or 'not readable'}, issued by {fields.get('bank_name') or 'bank not readable'}."
-           if "noc_number" not in fields else
-           f"NOC No. {fields.get('noc_number') or 'not readable'}, issued by {fields.get('issuing_authority') or 'not readable'}."),
+          document_reference(fields),
           "", "Sir / Madam,", "",
           "The document submitted with your application has been scrutinised. "
           "The following points need to be rectified:", ""]

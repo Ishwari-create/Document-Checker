@@ -27,3 +27,14 @@ types:
       'chief\s*fire\s*officer|fire\s*(and|&)\s*emergency|fire\s*brigade|fire\s*service': 2
       'valid\s*(up\s*to|upto|till)': 1
       'premises|building': 1
+  - id: affidavit
+    name: "Affidavit by the Trust / Society"
+    rules_file: affidavit_rules.yaml
+    labels_file: null
+    min_score: 5
+    keywords:
+      'affidavit': 3
+      'solemnly\s*(affirm|declare)|on\s*oath': 2
+      'deponent': 2
+      'stamp\s*paper|non[\s-]*judicial': 1
+      'notary|oath\s*commissioner|magistrate': 1

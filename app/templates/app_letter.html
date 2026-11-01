@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block body %}
+<p><a href="{{ url_for('application', app_id=a.app_id) }}">← {{ a.institute_name }}</a></p>
+<h1>One deficiency letter for the whole application</h1>
+<p class="muted">Missing documents, each document's deficiencies (only those the officer confirmed, once a document has been decided), photo problems and disagreements between documents, in one letter, the way the Regional Office sends it.</p>
+<pre class="letter">{{ text }}</pre>
+<p><a class="btn ghost" href="{{ url_for('application_letter', app_id=a.app_id, download=1) }}">Download as text</a></p>
+{% endblock %}

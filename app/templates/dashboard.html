@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - SD Scrutiny Desk{% endblock %}
+{% block body %}
+<h1>Regional Office dashboard</h1>
+<p class="muted">Every document received, what is wrong with them, and what needs action next. Alerts are worked out as of {{ as_of|dmy }}.</p>
+<div class="kpis">
+  <div><b>{{ kpi.documents }}</b>documents and photos checked</div>
+  <div><b>{{ kpi.pending }}</b>awaiting an officer</div>
+  <div><b>{{ kpi.deficient }}</b>with a deficiency</div>
+  <div><b>{{ kpi.review }}</b>sent to an officer to look at</div>
+  <div><b>{{ kpi.system_median }} s</b>median machine time per document</div>
+  <div><b>{% if study.saved_pct is defined %}{{ study.saved_pct }}%{% elif kpi.officer_median %}{{ kpi.officer_median }} min{% else %}-{% endif %}</b>
+    {% if study.saved_pct is defined %}officer time saved (<a href="{{ url_for('study') }}">time study</a>, {{ study.manual.files + study.assisted.files }} files){% elif kpi.officer_median %}median officer time per decided file ({{ kpi.decided }}){% else %}officer time: <a href="{{ url_for('study') }}">run the time study</a>{% endif %}</div>
+</div>
+
+<div class="grid2">
+<div>
+  <h2 style="margin-top:0">Alerts ({{ n_alerts }})</h2>
+  {% for al in alerts %}<div class="alert"><span class="st st-{{ al.level }}">{{ 'Overdue' if al.level=='FAIL' else 'Due soon' }}</span>
+    <div>{{ al.text }}<div class="muted small"><a href="{{ url_for('check', case_id=al.case.id) }}">{{ al.case.id }}</a> · {{ al.case.app.institute_name }}</div></div></div>
+  {% else %}<p class="muted">Nothing due.</p>{% endfor %}
+  <form class="row small" method="get" style="margin-top:10px"><div><label for="as_of">Show alerts as of</label><input type="date" id="as_of" name="as_of" value="{{ as_of.isoformat() }}"></div><button class="btn ghost">Update</button></form>
+</div>
+<div>
+  <h2 style="margin-top:0">Most common deficiencies</h2>
+  {% set top = trend[0][1] if trend else 1 %}
+  <div class="bars">{% for (rid, label), n in trend %}
+    <div>{{ label }} <span class="muted small">{{ rid }}</span></div><div class="track"><div class="fill" style="width:{{ (100*n/top)|round }}%"></div></div><div class="num">{{ n }}</div>
+  {% endfor %}</div>
+  <h2>Received, by document</h2>
+  <div class="bars">{% for k, name in kinds.items() %}
+    <div><a href="{{ url_for('queue', type=k) }}">{{ name }}</a></div><div class="track"><div class="fill alt" style="width:{{ (100*by_kind[k]/(by_kind.values()|max))|round }}%"></div></div><div class="num">{{ by_kind[k] }}</div>
+  {% endfor %}
+    <div>Infrastructure photos</div><div class="track"><div class="fill alt" style="width:{{ (100*n_photos/(by_kind.values()|max))|round }}%"></div></div><div class="num">{{ n_photos }}</div>
+  </div>
+</div>
+</div>
+
+<h2>Applications</h2>
+<p class="small muted">One row per application: are all documents in, do they agree with each other, and is anything wrong. Open one to see every document together and prepare a single letter.</p>
+<div class="tablewrap"><table>
+<thead><tr><th>Application</th><th>Institute</th><th>State</th><th class="num">Items</th><th>Missing</th><th>Status</th></tr></thead>
+<tbody>{% for r in apps_rows %}<tr class="link" onclick="location.href='{{ url_for('application', app_id=r.a.app_id) }}'">
+  <td><a href="{{ url_for('application', app_id=r.a.app_id) }}">{{ r.a.app_id }}</a></td><td>{{ r.a.institute_name }}<div class="muted small">{{ r.a.institution_type }}</div></td>
+  <td class="small">{{ r.a.state }}</td><td class="num">{{ r.docs }}</td>
+  <td class="small">{{ r.rv.missing|map(attribute='name')|join(', ') or '-' }}</td>
+  <td><span class="st st-{{ 'FAIL' if r.rv.status=='INCOMPLETE' else r.rv.status }}">{{ r.rv.status_text }}</span></td></tr>{% endfor %}</tbody>
+</table></div>
+
+<h2>By State</h2>
+<div class="bars" style="max-width:640px">{% for st, v in states %}
+  <div>{{ st }}</div><div class="track"><div class="fill" style="width:{{ (100*v.def/v.apps)|round }}%"></div></div><div class="num small">{{ v.def }} of {{ v.apps }} need action</div>
+{% endfor %}</div>
+{% endblock %}

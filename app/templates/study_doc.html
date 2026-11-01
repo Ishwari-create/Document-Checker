@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Time study - SD Scrutiny Desk{% endblock %}
+{% block body %}
+<div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap">
+  <h1>{{ 'Check by hand' if mode=='manual' else 'Check with the desk' }} <span class="muted small">file {{ n_done + 1 }}</span></h1>
+  <div class="clock" id="clock" aria-live="off">0:00</div>
+</div>
+<div class="studydoc">
+  <div><img src="{{ img }}" alt="Receipt to check"></div>
+  <form method="post" action="{{ url_for('study_submit') }}">
+    <div class="panel" style="margin-top:0"><h3>Application on the portal</h3>
+      <div class="facts"><div><span>Institute</span> {{ c.app.institute_name }}</div><div><span>Trust</span> {{ c.app.trust }}</div>
+        <div><span>Type</span> {{ c.app.institution_type }}{% if c.app.special_category %} (special category){% endif %}</div>
+        <div><span>Programmes</span> {{ c.app.programmes|join(', ') }}</div><div><span>LoA</span> {{ c.app.loa_date|dmy }}</div>
+        <div><span>FDR received</span> {{ c.received|dmy }}</div></div>
+      <p class="small muted" style="margin:8px 0 0">Reference (as an officer would look up): Security Deposit due Rs. {{ c.required|inr }}; payable to Member Secretary, AICTE;
+      nationalised / scheduled commercial bank; at least 10 years; within 15 days of the LoA.</p></div>
+    {% if mode=='assisted' %}<div class="panel"><h3>What the system found</h3>
+      {% for r in c.results if r.status in ('FAIL','UNCERTAIN') %}<p class="small" style="margin:6px 0"><span class="st st-{{ r.status }}">{{ r.rule_id }}</span> <b>{{ r.problem if r.status=='FAIL' else 'Check: ' ~ r.name }}</b><br>{{ r.evidence }}</p>
+      {% else %}<p class="small">No points raised.</p>{% endfor %}</div>{% endif %}
+    <div class="panel ticks"><h3>Tick every deficiency you find</h3>
+      {% for rid, label in problems.items() %}<label><input type="checkbox" name="rule" value="{{ rid }}" {% if mode=='assisted' and rid in system_fail %}checked{% endif %}> {{ label }} <span class="muted small">{{ rid }}</span></label>{% endfor %}
+      <p class="small muted">Tick nothing if the receipt is in order.</p>
+      <div class="row" style="margin-top:10px"><button class="btn" name="again" value="1">Submit and next</button><button class="btn ghost">Submit and stop</button></div>
+    </div>
+  </form>
+</div>
+<script>
+const t0 = Date.now(), el = document.getElementById('clock');
+setInterval(() => { const s = Math.floor((Date.now() - t0) / 1000); el.textContent = Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }, 1000);
+</script>
+{% endblock %}

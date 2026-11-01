@@ -1,0 +1,122 @@
+{
+  "summary": {
+    "documents": 10,
+    "type_recognised": 10,
+    "defective_passed": 0,
+    "defects_caught_by_right_rule": "5/5",
+    "clean_wrongly_failed": 0,
+    "document_accuracy": 1.0
+  },
+  "documents": [
+    {
+      "doc": "AFF-T01",
+      "defect": "none",
+      "truth": "PASS",
+      "system": "PASS",
+      "expected_rules": [],
+      "failed_rules": [],
+      "doc_type": "affidavit"
+    },
+    {
+      "doc": "AFF-T02",
+      "defect": "none",
+      "truth": "PASS",
+      "system": "PASS",
+      "expected_rules": [],
+      "failed_rules": [],
+      "doc_type": "affidavit"
+    },
+    {
+      "doc": "AFF-T03",
+      "defect": "none",
+      "truth": "PASS",
+      "system": "PASS",
+      "expected_rules": [],
+      "failed_rules": [],
+      "doc_type": "affidavit"
+    },
+    {
+      "doc": "AFF-T04",
+      "defect": "none",
+      "truth": "PASS",
+      "system": "PASS",
+      "expected_rules": [],
+      "failed_rules": [],
+      "doc_type": "affidavit"
+    },
+    {
+      "doc": "AFF-T05",
+      "defect": "none_scan",
+      "truth": "PASS",
+      "system": "PASS",
+      "expected_rules": [],
+      "failed_rules": [],
+      "doc_type": "affidavit"
+    },
+    {
+      "doc": "AFF-T06",
+      "defect": "low_stamp",
+      "truth": "FAIL",
+      "system": "FAIL",
+      "expected_rules": [
+        "F1"
+      ],
+      "failed_rules": [
+        "F1"
+      ],
+      "doc_type": "affidavit"
+    },
+    {
+      "doc": "AFF-T07",
+      "defect": "no_notary",
+      "truth": "FAIL",
+      "system": "FAIL",
+      "expected_rules": [
+        "F2"
+      ],
+      "failed_rules": [
+        "F2"
+      ],
+      "doc_type": "affidavit"
+    },
+    {
+      "doc": "AFF-T08",
+      "defect": "wrong_deponent",
+      "truth": "FAIL",
+      "system": "FAIL",
+      "expected_rules": [
+        "F3"
+      ],
+      "failed_rules": [
+        "F3"
+      ],
+      "doc_type": "affidavit"
+    },
+    {
+      "doc": "AFF-T09",
+      "defect": "old_date",
+      "truth": "FAIL",
+      "system": "FAIL",
+      "expected_rules": [
+        "F5"
+      ],
+      "failed_rules": [
+        "F5"
+      ],
+      "doc_type": "affidavit"
+    },
+    {
+      "doc": "AFF-T10",
+      "defect": "missing_undertaking",
+      "truth": "FAIL",
+      "system": "FAIL",
+      "expected_rules": [
+        "F6"
+      ],
+      "failed_rules": [
+        "F6"
+      ],
+      "doc_type": "affidavit"
+    }
+  ]
+}

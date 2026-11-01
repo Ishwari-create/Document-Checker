@@ -1,0 +1,99 @@
+{
+  "summary": {
+    "documents": 8,
+    "type_recognised": 8,
+    "defects_caught_by_right_rule": "4/4",
+    "clean_wrongly_failed": 0,
+    "document_accuracy": 1.0
+  },
+  "documents": [
+    {
+      "doc": "NOC-T01",
+      "defect": "none",
+      "truth": "PASS",
+      "system": "PASS",
+      "expected_rules": [],
+      "failed_rules": [],
+      "doc_type": "fire_noc"
+    },
+    {
+      "doc": "NOC-T02",
+      "defect": "none",
+      "truth": "PASS",
+      "system": "PASS",
+      "expected_rules": [],
+      "failed_rules": [],
+      "doc_type": "fire_noc"
+    },
+    {
+      "doc": "NOC-T03",
+      "defect": "none",
+      "truth": "PASS",
+      "system": "PASS",
+      "expected_rules": [],
+      "failed_rules": [],
+      "doc_type": "fire_noc"
+    },
+    {
+      "doc": "NOC-T04",
+      "defect": "none",
+      "truth": "PASS",
+      "system": "PASS",
+      "expected_rules": [],
+      "failed_rules": [],
+      "doc_type": "fire_noc"
+    },
+    {
+      "doc": "NOC-T05",
+      "defect": "expired",
+      "truth": "FAIL",
+      "system": "FAIL",
+      "expected_rules": [
+        "N2"
+      ],
+      "failed_rules": [
+        "N2"
+      ],
+      "doc_type": "fire_noc"
+    },
+    {
+      "doc": "NOC-T06",
+      "defect": "wrong_institute",
+      "truth": "FAIL",
+      "system": "FAIL",
+      "expected_rules": [
+        "N3"
+      ],
+      "failed_rules": [
+        "N3"
+      ],
+      "doc_type": "fire_noc"
+    },
+    {
+      "doc": "NOC-T07",
+      "defect": "wrong_premises",
+      "truth": "FAIL",
+      "system": "FAIL",
+      "expected_rules": [
+        "N4"
+      ],
+      "failed_rules": [
+        "N4"
+      ],
+      "doc_type": "fire_noc"
+    },
+    {
+      "doc": "NOC-T08",
+      "defect": "not_fire_authority",
+      "truth": "FAIL",
+      "system": "FAIL",
+      "expected_rules": [
+        "N1"
+      ],
+      "failed_rules": [
+        "N1"
+      ],
+      "doc_type": "fire_noc"
+    }
+  ]
+}

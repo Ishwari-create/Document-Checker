@@ -1,0 +1,613 @@
+{
+  "summary": {
+    "documents": 26,
+    "clean": 10,
+    "defective": 16,
+    "scanned": 5,
+    "document_accuracy": 0.962,
+    "defects_caught_by_right_rule": "16/16",
+    "defective_passed_as_clean": 0,
+    "clean_wrongly_failed": 0,
+    "clean_sent_to_review": 1,
+    "false_alarm_rate_on_clean": 0.0,
+    "field_accuracy": {
+      "FDR number": "25/26",
+      "Amount": "26/26",
+      "Deposit date": "26/26",
+      "Maturity date": "26/26",
+      "Depositor": "26/26"
+    },
+    "avg_seconds_text_pdf": 0.35,
+    "avg_seconds_scan": 3.4,
+    "total_seconds": 24.5
+  },
+  "per_rule": [
+    {
+      "rule": "D0",
+      "planted": 0,
+      "caught": 0,
+      "false_flags": 0,
+      "sent_to_review": 0,
+      "precision": null,
+      "recall": null
+    },
+    {
+      "rule": "R1",
+      "planted": 2,
+      "caught": 2,
+      "false_flags": 0,
+      "sent_to_review": 0,
+      "precision": 1.0,
+      "recall": 1.0
+    },
+    {
+      "rule": "R2",
+      "planted": 2,
+      "caught": 2,
+      "false_flags": 0,
+      "sent_to_review": 0,
+      "precision": 1.0,
+      "recall": 1.0
+    },
+    {
+      "rule": "R3",
+      "planted": 2,
+      "caught": 2,
+      "false_flags": 0,
+      "sent_to_review": 0,
+      "precision": 1.0,
+      "recall": 1.0
+    },
+    {
+      "rule": "R4",
+      "planted": 2,
+      "caught": 2,
+      "false_flags": 0,
+      "sent_to_review": 0,
+      "precision": 1.0,
+      "recall": 1.0
+    },
+    {
+      "rule": "R5",
+      "planted": 2,
+      "caught": 2,
+      "false_flags": 0,
+      "sent_to_review": 0,
+      "precision": 1.0,
+      "recall": 1.0
+    },
+    {
+      "rule": "R6",
+      "planted": 2,
+      "caught": 2,
+      "false_flags": 0,
+      "sent_to_review": 0,
+      "precision": 1.0,
+      "recall": 1.0
+    },
+    {
+      "rule": "R7",
+      "planted": 0,
+      "caught": 0,
+      "false_flags": 0,
+      "sent_to_review": 0,
+      "precision": null,
+      "recall": null
+    },
+    {
+      "rule": "R8",
+      "planted": 1,
+      "caught": 1,
+      "false_flags": 0,
+      "sent_to_review": 0,
+      "precision": 1.0,
+      "recall": 1.0
+    },
+    {
+      "rule": "R9",
+      "planted": 4,
+      "caught": 4,
+      "false_flags": 0,
+      "sent_to_review": 3,
+      "precision": 1.0,
+      "recall": 1.0
+    },
+    {
+      "rule": "R10",
+      "planted": 0,
+      "caught": 0,
+      "false_flags": 0,
+      "sent_to_review": 0,
+      "precision": null,
+      "recall": null
+    },
+    {
+      "rule": "A1",
+      "planted": 1,
+      "caught": 1,
+      "false_flags": 0,
+      "sent_to_review": 0,
+      "precision": 1.0,
+      "recall": 1.0
+    },
+    {
+      "rule": "A2",
+      "planted": 1,
+      "caught": 1,
+      "false_flags": 0,
+      "sent_to_review": 0,
+      "precision": 1.0,
+      "recall": 1.0
+    },
+    {
+      "rule": "A3",
+      "planted": 2,
+      "caught": 2,
+      "false_flags": 0,
+      "sent_to_review": 1,
+      "precision": 1.0,
+      "recall": 1.0
+    },
+    {
+      "rule": "A4",
+      "planted": 1,
+      "caught": 1,
+      "false_flags": 0,
+      "sent_to_review": 0,
+      "precision": 1.0,
+      "recall": 1.0
+    }
+  ],
+  "documents": [
+    {
+      "doc": "FDR-T01",
+      "scanned": true,
+      "layout": "B",
+      "defect": "wrong_beneficiary",
+      "truth": "FAIL",
+      "system": "FAIL",
+      "expected_rules": [
+        "R1"
+      ],
+      "failed_rules": [
+        "R1"
+      ],
+      "review_rules": [],
+      "seconds": 3.48,
+      "note": "Drawn in favour of the trust secretary",
+      "read_problems": []
+    },
+    {
+      "doc": "FDR-T02",
+      "scanned": false,
+      "layout": "C",
+      "defect": "short_amount",
+      "truth": "FAIL",
+      "system": "FAIL",
+      "expected_rules": [
+        "R4"
+      ],
+      "failed_rules": [
+        "R4"
+      ],
+      "review_rules": [],
+      "seconds": 0.35,
+      "note": "Two programmes (Engg + Mgmt) need 50 L; FDR covers only Engg (35 L)",
+      "read_problems": []
+    },
+    {
+      "doc": "FDR-T03",
+      "scanned": false,
+      "layout": "A",
+      "defect": "invalid_dates",
+      "truth": "FAIL",
+      "system": "FAIL",
+      "expected_rules": [
+        "R6"
+      ],
+      "failed_rules": [
+        "R6"
+      ],
+      "review_rules": [],
+      "seconds": 0.36,
+      "note": "Deposit date is after the date of submission (post-dated)",
+      "read_problems": []
+    },
+    {
+      "doc": "FDR-T04",
+      "scanned": false,
+      "layout": "C",
+      "defect": "invalid_dates",
+      "truth": "FAIL",
+      "system": "FAIL",
+      "expected_rules": [
+        "R6"
+      ],
+      "failed_rules": [
+        "R6"
+      ],
+      "review_rules": [],
+      "seconds": 0.36,
+      "note": "Old FDR of 2014 that matured in 2024, re-submitted",
+      "read_problems": []
+    },
+    {
+      "doc": "FDR-T05",
+      "scanned": true,
+      "layout": "B",
+      "defect": "name_mismatch",
+      "truth": "FAIL",
+      "system": "FAIL",
+      "expected_rules": [
+        "R5"
+      ],
+      "failed_rules": [
+        "R5"
+      ],
+      "review_rules": [],
+      "seconds": 3.34,
+      "note": "Different institute's name",
+      "read_problems": []
+    },
+    {
+      "doc": "FDR-T06",
+      "scanned": false,
+      "layout": "A",
+      "defect": "none",
+      "truth": "PASS",
+      "system": "PASS",
+      "expected_rules": [],
+      "failed_rules": [],
+      "review_rules": [],
+      "seconds": 0.32,
+      "note": "",
+      "read_problems": []
+    },
+    {
+      "doc": "FDR-T07",
+      "scanned": false,
+      "layout": "B",
+      "defect": "altered",
+      "truth": "FAIL",
+      "system": "FAIL",
+      "expected_rules": [
+        "A3",
+        "R8",
+        "R9"
+      ],
+      "failed_rules": [
+        "R8",
+        "R9",
+        "A3"
+      ],
+      "review_rules": [],
+      "seconds": 0.38,
+      "note": "Figures overwritten to 35 L; words and the bank's QR still say 25 L",
+      "read_problems": []
+    },
+    {
+      "doc": "FDR-T08",
+      "scanned": false,
+      "layout": "A",
+      "defect": "none",
+      "truth": "PASS",
+      "system": "PASS",
+      "expected_rules": [],
+      "failed_rules": [],
+      "review_rules": [],
+      "seconds": 0.4,
+      "note": "",
+      "read_problems": []
+    },
+    {
+      "doc": "FDR-T09",
+      "scanned": false,
+      "layout": "A",
+      "defect": "name_mismatch",
+      "truth": "FAIL",
+      "system": "FAIL",
+      "expected_rules": [
+        "R5"
+      ],
+      "failed_rules": [
+        "R5"
+      ],
+      "review_rules": [],
+      "seconds": 0.29,
+      "note": "Deposit made by an unrelated company",
+      "read_problems": []
+    },
+    {
+      "doc": "FDR-T10",
+      "scanned": false,
+      "layout": "C",
+      "defect": "none",
+      "truth": "PASS",
+      "system": "PASS",
+      "expected_rules": [],
+      "failed_rules": [],
+      "review_rules": [],
+      "seconds": 0.3,
+      "note": "",
+      "read_problems": []
+    },
+    {
+      "doc": "FDR-T11",
+      "scanned": false,
+      "layout": "B",
+      "defect": "short_amount",
+      "truth": "FAIL",
+      "system": "FAIL",
+      "expected_rules": [
+        "R4"
+      ],
+      "failed_rules": [
+        "R4"
+      ],
+      "review_rules": [],
+      "seconds": 0.35,
+      "note": "Women's college slab is 28 L; FDR is 25 L",
+      "read_problems": []
+    },
+    {
+      "doc": "FDR-T12",
+      "scanned": false,
+      "layout": "C",
+      "defect": "short_tenure",
+      "truth": "FAIL",
+      "system": "FAIL",
+      "expected_rules": [
+        "R3"
+      ],
+      "failed_rules": [
+        "R3"
+      ],
+      "review_rules": [],
+      "seconds": 0.38,
+      "note": "8 years: follows the older instruction, not the 10-year SD period",
+      "read_problems": []
+    },
+    {
+      "doc": "FDR-T13",
+      "scanned": false,
+      "layout": "B",
+      "defect": "none",
+      "truth": "PASS",
+      "system": "PASS",
+      "expected_rules": [],
+      "failed_rules": [],
+      "review_rules": [],
+      "seconds": 0.3,
+      "note": "",
+      "read_problems": []
+    },
+    {
+      "doc": "FDR-T14",
+      "scanned": false,
+      "layout": "A",
+      "defect": "ineligible_bank",
+      "truth": "FAIL",
+      "system": "FAIL",
+      "expected_rules": [
+        "R2"
+      ],
+      "failed_rules": [
+        "R2"
+      ],
+      "review_rules": [
+        "R9"
+      ],
+      "seconds": 0.33,
+      "note": "Co-operative bank",
+      "read_problems": []
+    },
+    {
+      "doc": "FDR-T15",
+      "scanned": false,
+      "layout": "C",
+      "defect": "none",
+      "truth": "PASS",
+      "system": "PASS",
+      "expected_rules": [],
+      "failed_rules": [],
+      "review_rules": [],
+      "seconds": 0.36,
+      "note": "",
+      "read_problems": []
+    },
+    {
+      "doc": "FDR-T16",
+      "scanned": false,
+      "layout": "A",
+      "defect": "short_tenure",
+      "truth": "FAIL",
+      "system": "FAIL",
+      "expected_rules": [
+        "R3"
+      ],
+      "failed_rules": [
+        "R3"
+      ],
+      "review_rules": [],
+      "seconds": 0.3,
+      "note": "5 years",
+      "read_problems": []
+    },
+    {
+      "doc": "FDR-T17",
+      "scanned": false,
+      "layout": "A",
+      "defect": "none",
+      "truth": "PASS",
+      "system": "PASS",
+      "expected_rules": [],
+      "failed_rules": [],
+      "review_rules": [],
+      "seconds": 0.38,
+      "note": "",
+      "read_problems": []
+    },
+    {
+      "doc": "FDR-T18",
+      "scanned": false,
+      "layout": "B",
+      "defect": "none",
+      "truth": "PASS",
+      "system": "PASS",
+      "expected_rules": [],
+      "failed_rules": [],
+      "review_rules": [],
+      "seconds": 0.35,
+      "note": "",
+      "read_problems": []
+    },
+    {
+      "doc": "FDR-T19",
+      "scanned": false,
+      "layout": "A",
+      "defect": "wrong_beneficiary",
+      "truth": "FAIL",
+      "system": "FAIL",
+      "expected_rules": [
+        "R1"
+      ],
+      "failed_rules": [
+        "R1"
+      ],
+      "review_rules": [],
+      "seconds": 0.4,
+      "note": "Drawn in favour of the college itself",
+      "read_problems": []
+    },
+    {
+      "doc": "FDR-T20",
+      "scanned": false,
+      "layout": "A",
+      "defect": "altered",
+      "truth": "FAIL",
+      "system": "FAIL",
+      "expected_rules": [
+        "R9"
+      ],
+      "failed_rules": [
+        "R9"
+      ],
+      "review_rules": [],
+      "seconds": 0.34,
+      "note": "Receipt is internally consistent, but the bank's record shows Rs. 3,50,000",
+      "read_problems": []
+    },
+    {
+      "doc": "FDR-T21",
+      "scanned": false,
+      "layout": "B",
+      "defect": "none",
+      "truth": "PASS",
+      "system": "PASS",
+      "expected_rules": [],
+      "failed_rules": [],
+      "review_rules": [],
+      "seconds": 0.44,
+      "note": "",
+      "read_problems": []
+    },
+    {
+      "doc": "FDR-T22",
+      "scanned": true,
+      "layout": "A",
+      "defect": "none",
+      "truth": "PASS",
+      "system": "PASS",
+      "expected_rules": [],
+      "failed_rules": [],
+      "review_rules": [],
+      "seconds": 3.19,
+      "note": "",
+      "read_problems": []
+    },
+    {
+      "doc": "FDR-T23",
+      "scanned": true,
+      "layout": "C",
+      "defect": "none",
+      "truth": "PASS",
+      "system": "UNCERTAIN",
+      "expected_rules": [],
+      "failed_rules": [],
+      "review_rules": [
+        "R9"
+      ],
+      "seconds": 3.72,
+      "note": "",
+      "read_problems": [
+        "FDR number"
+      ]
+    },
+    {
+      "doc": "FDR-T24",
+      "scanned": false,
+      "layout": "B",
+      "defect": "ineligible_bank",
+      "truth": "FAIL",
+      "system": "FAIL",
+      "expected_rules": [
+        "R2"
+      ],
+      "failed_rules": [
+        "R2"
+      ],
+      "review_rules": [
+        "R9"
+      ],
+      "seconds": 0.37,
+      "note": "NBFC, not a bank",
+      "read_problems": []
+    },
+    {
+      "doc": "FDR-T25",
+      "scanned": false,
+      "layout": "A",
+      "defect": "pdf_edited",
+      "truth": "FAIL",
+      "system": "FAIL",
+      "expected_rules": [
+        "A1",
+        "A2",
+        "A3",
+        "R9"
+      ],
+      "failed_rules": [
+        "R9",
+        "A1",
+        "A2",
+        "A3"
+      ],
+      "review_rules": [],
+      "seconds": 0.35,
+      "note": "Amount raised to 25 L in figures and words with a PDF editor; bank record and QR still say 15 L",
+      "read_problems": []
+    },
+    {
+      "doc": "FDR-T26",
+      "scanned": true,
+      "layout": "B",
+      "defect": "scan_pasted",
+      "truth": "FAIL",
+      "system": "FAIL",
+      "expected_rules": [
+        "A4",
+        "R9"
+      ],
+      "failed_rules": [
+        "R9",
+        "A4"
+      ],
+      "review_rules": [
+        "A3"
+      ],
+      "seconds": 3.29,
+      "note": "Amount raised to 25 L by pasting a patch into the scan; bank record still says 15 L",
+      "read_problems": []
+    }
+  ]
+}

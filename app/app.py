@@ -31,26 +31,32 @@ import os
 import yaml
 from flask import Flask, Response, abort, g, jsonify, redirect, render_template, request, session, url_for
 from werkzeug.security import check_password_hash
-from pdf2image import convert_from_bytes
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
+from src.render import ocr_status, preview_page                # noqa: E402
 from src.deficiency import generate_deficiency_letter          # noqa: E402
 from src.pipeline import load_applications, run_check          # noqa: E402
-from src.registry import IssuerConnector, Ledger               # noqa: E402
+from src.registry import CaseStore, IssuerConnector, Ledger    # noqa: E402
 from src.rule_engine import check_document, get_overall_verdict, inr, load_pack, required_amount  # noqa: E402
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 10 * 1024 * 1024
-app.secret_key = os.environ.get("SECRET_KEY", "change-me-before-deploying")
+DEFAULT_SECRET, DEFAULT_TOKEN = "change-me-before-deploying", "demo-portal-token"
+app.secret_key = os.environ.get("SECRET_KEY", DEFAULT_SECRET)
 USERS = {u["username"]: u for u in yaml.safe_load((ROOT / "config" / "users.yaml").read_text())["users"]}
-API_TOKEN = os.environ.get("API_TOKEN", "demo-portal-token")
+API_TOKEN = os.environ.get("API_TOKEN", DEFAULT_TOKEN)
+PRODUCTION = os.environ.get("APP_ENV", "").lower() == "production"
+if PRODUCTION and (app.secret_key == DEFAULT_SECRET or API_TOKEN == DEFAULT_TOKEN):
+    raise SystemExit("Refusing to start: APP_ENV=production but SECRET_KEY or API_TOKEN is still the default. "
+                     "Set both environment variables to long random values.")
 
 # Who may open what. Anything not listed needs any signed-in user.
 ROLE_ACCESS = {
     "queue": {"officer"}, "check": {"officer"}, "decide": {"officer"}, "correct": {"officer"},
     "letter": {"officer"}, "letter_pdf": {"officer"}, "upload": {"officer"}, "sample_pdf": {"officer"},
+    "email_letter": {"officer"}, "outbox": {"officer"}, "inbox": {"officer"}, "inbox_events": {"officer"},
     "audit": {"officer", "auditor"},
 }
 PUBLIC = {"login", "logout", "static", "api_check", "api_rules"}
@@ -94,10 +100,16 @@ ISSUER = IssuerConnector()
 LEDGER = Ledger()                         # data/ledger.sqlite3
 DOCS = ROOT / "data" / "test_documents"
 LABELS = {r["doc_id"]: r for r in csv.DictReader(open(ROOT / "data" / "labels.csv"))}
-CASES: dict = {}                          # case_id -> case (in memory for the prototype)
+CASES = CaseStore()                       # cases survive a restart (data/ledger.sqlite3)
 PAGE_CACHE: dict = {}
 
 STATUS_ORDER = {"FAIL": 0, "UNCERTAIN": 1, "PASS": 2, "NA": 3, "EXEMPT": 4}
+RULE_ORDER = ["D0", "R0", "R1", "R2", "R3", "R4", "R5", "R6", "R7", "R8", "R9", "R10", "N1", "N2", "N3", "N4",
+              "A1", "A2", "A3", "A4"]
+
+
+def finding_key(r):
+    return (STATUS_ORDER.get(r["status"], 9), RULE_ORDER.index(r["rule_id"]) if r["rule_id"] in RULE_ORDER else 99)
 OVERALL_TEXT = {"PASS": "No deficiency found", "FAIL": "Deficiency found", "UNCERTAIN": "Needs officer review",
                 "EXEMPT": "Not required"}
 
@@ -107,7 +119,7 @@ OVERALL_TEXT = {"PASS": "No deficiency found", "FAIL": "Deficiency found", "UNCE
 # ---------------------------------------------------------------------------
 def page_image(sha: str, pdf: bytes) -> str:
     if sha not in PAGE_CACHE:
-        img = convert_from_bytes(pdf, dpi=110, first_page=1, last_page=1)[0]
+        img = preview_page(pdf, 110)
         buf = io.BytesIO()
         img.convert("RGB").save(buf, "JPEG", quality=82)
         PAGE_CACHE[sha] = "data:image/jpeg;base64," + base64.b64encode(buf.getvalue()).decode()
@@ -118,7 +130,7 @@ def make_case(case_id: str, pdf: bytes, app_rec: dict, received: date, origin: s
               actor: str = "system") -> dict:
     out = run_check(pdf, app_rec, submitted_on=received, issuer=ISSUER, ledger=LEDGER if record else None,
                     actor=actor, record=record)
-    out["results"].sort(key=lambda r: (STATUS_ORDER.get(r["status"], 9), int(r["rule_id"][1:])))
+    out["results"].sort(key=finding_key)
     req, basis = required_amount({r["id"]: r for r in PACK["rules"]}["R4"], app_rec)
     case = {"id": case_id, "pdf": pdf, "app": app_rec, "received": received, "origin": origin,
             "required": req, "required_basis": basis, "decision": None, **out}
@@ -153,7 +165,7 @@ def boxes_for(case: dict) -> list:
 
 @app.template_filter("inr")
 def _inr(x):
-    return inr(x) if x is not None else "-"
+    return inr(x) if isinstance(x, (int, float)) else "-"
 
 
 @app.template_filter("dmy")
@@ -170,7 +182,8 @@ def _dmy(s):
 
 @app.context_processor
 def _globals():
-    return {"OVERALL_TEXT": OVERALL_TEXT, "rules_version": PACK.get("version"), "user": g.get("user")}
+    return {"OVERALL_TEXT": OVERALL_TEXT, "rules_version": PACK.get("version"), "user": g.get("user"),
+            "ocr": ocr_status()}
 
 
 # ---------------------------------------------------------------------------
@@ -179,7 +192,7 @@ def _globals():
 @app.route("/")
 def queue():
     cases = [sample_case(d) for d in sorted(LABELS)]
-    cases += [c for c in CASES.values() if c["origin"] == "upload"]
+    cases += [c for c in CASES.values() if c["origin"] in ("upload", "inbox")]
     order = {"FAIL": 1, "UNCERTAIN": 0, "PASS": 2, "EXEMPT": 3}
     cases.sort(key=lambda c: (c["decision"] is not None, order.get(c["overall"], 9), c["id"]))
     counts = {k: sum(1 for c in cases if c["overall"] == k) for k in order}
@@ -220,6 +233,7 @@ def decide(case_id):
         return render_check_error(case, "Give a reason for every finding you overrule. It is kept in the audit trail.")
     case["decision"] = {"action": action, "officer": officer, "agreed": agreed, "overrides": overrides,
                         "at": datetime.now().isoformat(timespec="seconds")}
+    CASES.save(case)
     LEDGER.log(officer, f"officer_{action}", case["app"].get("app_id", "?"), case["sha256"],
                case["rules_version"], action, case["decision"])
     if action == "letter":
@@ -237,9 +251,7 @@ def render_check_error(case, msg):
 @app.route("/check/<case_id>/letter")
 def letter(case_id):
     case = CASES.get(case_id) or abort(404)
-    d = case.get("decision") or {}
-    text = generate_deficiency_letter(case["extraction"]["fields"], case["results"], case["app"],
-                                      officer_name=d.get("officer"), confirmed_rule_ids=d.get("agreed"))
+    text = letter_text(case)
     if request.args.get("download"):
         return Response(text, mimetype="text/plain",
                         headers={"Content-Disposition": f"attachment; filename=deficiency_{case_id}.txt"})
@@ -277,26 +289,30 @@ def correct(case_id):
         f["tenure_years"] = round((d2 - d1).days / 365.25, 2)
     results = check_document(f, case["app"], submitted_on=case["received"], issuer=ISSUER, ledger=LEDGER,
                              sha256=case["sha256"])
-    results.sort(key=lambda r: (STATUS_ORDER.get(r["status"], 9), int(r["rule_id"][1:])))
+    results.sort(key=finding_key)
     case["extraction"]["fields"] = f
     case["results"] = results
     case["overall"] = get_overall_verdict(results)
     case.setdefault("corrections", []).append({"field": CORRECTABLE[field], "old": old, "new": value,
                                                "by": g.user["name"], "at": datetime.now().isoformat(timespec="seconds")})
+    CASES.save(case)
     LEDGER.log(g.user["name"], "officer_correction", case["app"].get("app_id", "?"), case["sha256"],
                case["rules_version"], case["overall"], {"field": field, "old": old, "new": value})
     return redirect(url_for("check", case_id=case_id))
 
 
-@app.route("/check/<case_id>/letter.pdf")
-def letter_pdf(case_id):
+def letter_text(case: dict, draft: bool = True) -> str:
+    d = case.get("decision") or {}
+    return generate_deficiency_letter(case["extraction"]["fields"], case["results"], case["app"],
+                                      officer_name=d.get("officer"), confirmed_rule_ids=d.get("agreed"), draft=draft,
+                                      document_label=(case.get("doc_type") or {}).get("name"))
+
+
+def letter_pdf_bytes(case: dict, draft: bool = True) -> bytes:
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.styles import ParagraphStyle
-    from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer
-    case = CASES.get(case_id) or abort(404)
-    d = case.get("decision") or {}
-    text = generate_deficiency_letter(case["extraction"]["fields"], case["results"], case["app"],
-                                      officer_name=d.get("officer"), confirmed_rule_ids=d.get("agreed"))
+    from reportlab.platypus import Paragraph, SimpleDocTemplate
+    text = letter_text(case, draft)
     buf = io.BytesIO()
     style = ParagraphStyle("b", fontName="Times-Roman", fontSize=11, leading=15)
     head = ParagraphStyle("h", parent=style, fontName="Times-Bold", textColor="#A8231A")
@@ -307,9 +323,103 @@ def letter_pdf(case_id):
         story.append(Paragraph(esc.strip() or "&nbsp;", head if line.startswith("DRAFT") else
                                ParagraphStyle("i", parent=style, leftIndent=lead * 3)))
     SimpleDocTemplate(buf, pagesize=A4, leftMargin=60, rightMargin=60, topMargin=60, bottomMargin=60,
-                      title=f"Draft deficiency letter {case_id}").build(story)
-    return Response(buf.getvalue(), mimetype="application/pdf",
+                      title=f"Deficiency letter {case['id']}").build(story)
+    return buf.getvalue()
+
+
+@app.route("/check/<case_id>/letter.pdf")
+def letter_pdf(case_id):
+    case = CASES.get(case_id) or abort(404)
+    return Response(letter_pdf_bytes(case), mimetype="application/pdf",
                     headers={"Content-Disposition": f"attachment; filename=deficiency_{case_id}.pdf"})
+
+
+@app.route("/check/<case_id>/email", methods=["POST"])
+def email_letter(case_id):
+    """Officer approves and sends the letter: the PDF goes to the institute straight away."""
+    from src.mailer import send_letter
+    case = CASES.get(case_id) or abort(404)
+    if not (case.get("decision") or {}).get("action") == "letter":
+        abort(400)
+    to = request.form.get("to", "").strip() or case["app"].get("contact_email", "")
+    if "@" not in to:
+        return render_template("letter.html", c=case, text=letter_text(case), error="Enter the institute's email address.")
+    inst = case["app"].get("institute_name", "the institute")
+    body = (f"Dear Principal / Director,\n\nPlease find attached the deficiency letter for application "
+            f"{case['app'].get('app_id')} ({inst}) regarding the document submitted to AICTE. Kindly rectify the "
+            f"points listed and resubmit through the portal.\n\nRegards,\n{g.user['name']}\nRegional Office, AICTE")
+    res = send_letter(to, f"Deficiency in submitted document - {case['app'].get('app_id')}", body,
+                      letter_pdf_bytes(case, draft=False), f"deficiency_{case_id}.pdf")
+    case["email"] = {**res, "by": g.user["name"]}
+    CASES.save(case)
+    LEDGER.log(g.user["name"], "letter_emailed" if res["status"] == "sent" else "letter_saved_to_outbox",
+               case["app"].get("app_id", "?"), case["sha256"], case["rules_version"], res["status"], {"to": to})
+    return redirect(url_for("letter", case_id=case_id))
+
+
+@app.route("/outbox")
+def outbox():
+    rows = [c for c in CASES.values() if c.get("email")]
+    rows.sort(key=lambda c: c["email"]["at"], reverse=True)
+    from src.mailer import smtp_configured
+    return render_template("outbox.html", rows=rows, smtp=smtp_configured())
+
+
+# ---------------------------------------------------------------------------
+# Live inbox: drop a PDF into a folder, see the result in seconds
+# ---------------------------------------------------------------------------
+def _inbox_handler(path, data, sub):
+    from src.extractor import extract_document
+    from src.rule_engine import name_similarity
+    app_rec, how = None, ""
+    if sub and sub in APPS:
+        app_rec, how = APPS[sub], f"folder {sub}"
+    ext = extract_document(data)
+    if ext["doc_type"]["type"] is None:
+        why = ("scanned copy, and the OCR engine is not installed" if ext["method"] == "ocr-missing"
+               else "no Fixed Deposit Receipt or Fire NOC wording found")
+        return {"error": f"Not a supported document ({why}). Nothing was checked."}
+    if app_rec is None:
+        f = ext["fields"]
+        name = f.get("depositor_name") or f.get("institute_name")
+        if name:
+            scored = sorted(((max(name_similarity(name, a["institute_name"]), name_similarity(name, a.get("trust"))), a)
+                             for a in APPS.values()), key=lambda t: -t[0])
+            if scored[0][0] >= 75:
+                app_rec, how = scored[0][1], f"name on document ({scored[0][0]:.0f}% match)"
+    if app_rec is None and INBOX.settings.get("default_app") in APPS:
+        app_rec, how = APPS[INBOX.settings["default_app"]], "default application"
+    if app_rec is None:
+        return {"error": "Could not tell which application this belongs to. Choose a default application, "
+                         "or put the file in a folder named after the application number."}
+    cid = "I" + uuid.uuid4().hex[:6].upper()
+    case = make_case(cid, data, app_rec, INBOX.received_date(), origin="inbox")
+    case["inbox_file"] = path.name
+    CASES.save(case)
+    return {"case": cid, "institute": app_rec["institute_name"], "matched": how, "overall": case["overall"],
+            "overall_text": OVERALL_TEXT.get(case["overall"], case["overall"]),
+            "doc_type": case["doc_type"]["name"] if case.get("doc_type") else "",
+            "points": [r.get("problem") or r["name"] for r in case["results"] if r["status"] in ("FAIL", "UNCERTAIN")][:3]}
+
+
+from src.inbox import INBOX_DIR, InboxWatcher   # noqa: E402
+INBOX = InboxWatcher(INBOX_DIR, _inbox_handler)
+
+
+@app.route("/inbox", methods=["GET", "POST"])
+def inbox():
+    INBOX.start()
+    if request.method == "POST":
+        INBOX.settings["default_app"] = request.form.get("default_app") or None
+        INBOX.settings["received"] = request.form.get("received") or None
+        return redirect(url_for("inbox"))
+    return render_template("inbox.html", folder=str(INBOX_DIR.resolve()), apps=APPS, settings=INBOX.settings,
+                           events=INBOX.recent())
+
+
+@app.route("/inbox/events")
+def inbox_events():
+    return jsonify({"running": INBOX.running(), "events": INBOX.recent()})
 
 
 # ---------------------------------------------------------------------------
@@ -441,6 +551,7 @@ def fool():
     case = make_case(cid, pdf, APPS[d["app_id"]], d["submitted"], origin="fool", record=False)
     case["trick"] = TRICKS[trick]
     case["base"] = base_id
+    CASES.save(case)
     return redirect(url_for("check", case_id=cid))
 
 
@@ -449,15 +560,15 @@ def fool():
 # ---------------------------------------------------------------------------
 @app.route("/evaluation")
 def evaluation():
-    path = ROOT / "reports" / "evaluation.json"
-    if not path.exists():
-        return render_template("evaluation.html", ev=None)
-    hold = {}
-    for k in ("holdout", "holdout2"):
-        hp = ROOT / "reports" / f"evaluation_{k}.json"
-        if hp.exists():
-            hold[k] = json.loads(hp.read_text())["summary"]
-    return render_template("evaluation.html", ev=json.loads(path.read_text()), hold=hold)
+    rep = ROOT / "reports"
+    load = lambda k: json.loads((rep / f"{k}.json").read_text()) if (rep / f"{k}.json").exists() else None
+    ev = load("evaluation")
+    unseen = []
+    for k, name in (("holdout", "Unseen layout 1"), ("holdout2", "Unseen layout 2 (never used for tuning)")):
+        before, after = load(f"evaluation_{k}_noml"), load(f"evaluation_{k}")
+        if before and after:
+            unseen.append({"name": name, "before": before["summary"], "after": after["summary"]})
+    return render_template("evaluation.html", ev=ev, unseen=unseen, noc=load("evaluation_noc"))
 
 
 @app.route("/audit")
@@ -483,4 +594,6 @@ def sample_pdf(doc_id):
 
 if __name__ == "__main__":
     import os
+    INBOX.start()
+    print(f" * Live inbox: drop PDFs into {INBOX_DIR.resolve()}")
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8501)), debug=False)

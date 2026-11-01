@@ -25,10 +25,11 @@ try:
 except ImportError:  # pragma: no cover
     PDFPLUMBER_AVAILABLE = False
 
+from .render import ocr_available, ocr_lang_for, ocr_status, render_pages
+
 try:
     import pytesseract
-    from pdf2image import convert_from_bytes
-    OCR_AVAILABLE = True
+    OCR_AVAILABLE = ocr_available()       # needs the Tesseract program, not just the Python package
 except ImportError:  # pragma: no cover
     OCR_AVAILABLE = False
 
@@ -95,6 +96,45 @@ def _rows_to_segments(words: List[dict], page_no: int, row_tol: float) -> List[d
     return _split_rows(rows, page_no)
 
 
+def _cid(c) -> tuple:
+    return (round(c["x0"], 2), round(c["top"], 2), c["text"], c.get("fontname"))
+
+
+def hidden_char_ids(chars: List[dict]) -> set:
+    """Characters covered by text drawn later on the same line (an edit pasted over the original).
+
+    Characters are grouped into runs (consecutive in drawing order, same font, same line).
+    When a later run sits on top of an earlier run, the earlier characters under it are hidden."""
+    runs: List[dict] = []
+    for i, c in enumerate(chars):
+        if not c["text"].strip():
+            continue
+        r = runs[-1] if runs else None
+        if r and r["font"] == c.get("fontname") and abs(r["top"] - c["top"]) < 2 and c["x0"] >= r["x1"] - 1:
+            r["chars"].append(c); r["x1"] = c["x1"]; r["end"] = i
+        else:
+            runs.append({"font": c.get("fontname"), "top": c["top"], "bottom": c["bottom"], "x0": c["x0"],
+                         "x1": c["x1"], "chars": [c], "start": i, "end": i})
+    hidden = set()
+    spaces = [(i, c) for i, c in enumerate(chars) if not c["text"].strip()]
+    for later in runs:
+        for i, c in spaces:            # spaces of the old text would split the new words
+            if i < later["start"] and abs(c["top"] - later["top"]) < 2 and later["x0"] <= (c["x0"] + c["x1"]) / 2 <= later["x1"]:
+                hidden.add(_cid(c))
+    for k, later in enumerate(runs):
+        for earlier in runs[:k]:
+            if abs(earlier["top"] - later["top"]) > 0.6 * (later["bottom"] - later["top"]):
+                continue
+            ox = min(earlier["x1"], later["x1"]) - max(earlier["x0"], later["x0"])
+            if ox <= 2:
+                continue
+            for c in earlier["chars"]:
+                mid = (c["x0"] + c["x1"]) / 2
+                if later["x0"] - 0.5 <= mid <= later["x1"] + 0.5:
+                    hidden.add(_cid(c))
+    return hidden
+
+
 def _segments_from_text_layer(data: bytes) -> Tuple[List[dict], List[dict]]:
     segments, pages = [], []
     with pdfplumber.open(io.BytesIO(data)) as pdf:
@@ -107,7 +147,12 @@ def _segments_from_text_layer(data: bytes) -> Tuple[List[dict], List[dict]]:
                 m = o.get("matrix") or (1, 0, 0, 1, 0, 0)
                 return o.get("upright", True) and abs(m[1]) < 0.05 and abs(m[2]) < 0.05
             upright = page.filter(_horizontal)
-            words = upright.extract_words(keep_blank_chars=False, x_tolerance=2, y_tolerance=3)
+            # Text drawn later covers text drawn earlier (an edit pasted over the original).
+            # Read what a person sees: drop characters hidden under a later one.
+            hidden = hidden_char_ids(upright.chars)
+            if hidden:
+                upright = upright.filter(lambda o: o.get("object_type") != "char" or _cid(o) not in hidden)
+            words = upright.extract_words(keep_blank_chars=False, x_tolerance=3, y_tolerance=3)
             segments += _rows_to_segments(words, i, row_tol=3)
     return segments, pages
 
@@ -115,11 +160,11 @@ def _segments_from_text_layer(data: bytes) -> Tuple[List[dict], List[dict]]:
 def _segments_from_ocr(data: bytes) -> Tuple[List[dict], List[dict], float]:
     segments, pages, confs = [], [], []
     scale = 72.0 / OCR_DPI
-    for i, img in enumerate(convert_from_bytes(data, dpi=OCR_DPI)):
+    for i, img in enumerate(render_pages(data, OCR_DPI)):
         pages.append({"page": i, "width": img.width * scale, "height": img.height * scale})
         # Photocopies carry speckle; a median filter removes dots without eating strokes.
         clean = ImageOps.autocontrast(img.convert("L").filter(ImageFilter.MedianFilter(3)))
-        d = pytesseract.image_to_data(clean, output_type=pytesseract.Output.DICT, config="--psm 4")
+        d = pytesseract.image_to_data(clean, lang=ocr_lang_for(clean), output_type=pytesseract.Output.DICT, config="--psm 4")
         words = []
         for k, txt in enumerate(d["text"]):
             txt = (txt or "").strip()
@@ -169,7 +214,7 @@ def read_document(src: PdfSource) -> Dict[str, Any]:
                     "read_quality": round(q, 2), "bytes": data}
         except Exception:
             pass
-    return {"segments": segments, "pages": pages, "method": "unreadable",
+    return {"segments": segments, "pages": pages, "method": "unreadable" if OCR_AVAILABLE else "ocr-missing",
             "read_quality": 0.0, "bytes": data}
 
 
@@ -262,8 +307,18 @@ def _load_labels() -> List[Tuple[str, str]]:
 LABELS: List[Tuple[str, str]] = _load_labels()
 # Scans turn spaces into dots or quotes ("Receipt.No_", "Name:of Depositor"),
 # so any run of non-letters is accepted between the words of a label.
-_LABEL_RES = [(f, re.compile(r"^[\W_]*" + p.replace(r"\s*", r"[\W_]*") + r"(?![a-z])[\W_]*", re.IGNORECASE))
-              for f, p in LABELS]
+def compile_labels(labels: List[Tuple[str, str]]):
+    return [(f, re.compile(r"^[\W_]*" + p.replace(r"\s*", r"[\W_]*") + r"(?![a-z])[\W_]*", re.IGNORECASE))
+            for f, p in labels]
+
+
+def load_labels_file(name: str) -> List[Tuple[str, str]]:
+    import yaml
+    data = yaml.safe_load((LABELS_FILE.parent / name).read_text(encoding="utf-8"))
+    return [(e["field"], e["pattern"]) for e in data["fields"]]
+
+
+_LABEL_RES = compile_labels(LABELS)
 _BANK_WORDS = re.compile(r"\b(bank|co-?operative|credit\s+society|sahakari|finance|nidhi|investments)\b", re.I)
 _IFSC_RE = re.compile(r"\b([A-Z]{4}0[A-Z0-9]{6})\b")
 
@@ -417,3 +472,62 @@ def extract_fdr_fields(source: PdfSource, precomputed_cache: Optional[Dict[str, 
         "confidence": round(len(present) / len(KEY_FIELDS), 2),
         "missing": [k for k in KEY_FIELDS if k not in present],
     }
+
+
+# ---------------------------------------------------------------------------
+# 4. Any supported document: read once, decide the type, parse with its labels
+# ---------------------------------------------------------------------------
+def parse_noc_fields(segments: List[dict], pages: List[dict]) -> Tuple[Dict[str, Any], Dict[str, dict]]:
+    label_res = compile_labels(load_labels_file("fire_noc_labels.yaml"))
+    fields: Dict[str, Any] = {"noc_number": None, "issuing_authority": None, "institute_name": None,
+                              "address": None, "issue_date": None, "valid_upto": None, "buildings": None}
+    where: Dict[str, dict] = {}
+
+    def put(field, value, seg):
+        if value in (None, "") or fields.get(field) is not None:
+            return
+        fields[field] = value
+        where[field] = {"page": seg["page"], "bbox": seg["bbox"]}
+
+    for i, seg in enumerate(segments):
+        text = seg["text"]
+        for field, rx in label_res:
+            m = rx.match(text)
+            if not m:
+                continue
+            value, vseg = _value_after_label(i, segments, text[m.end():])
+            if field in ("issue_date", "valid_upto"):
+                put(field, parse_date(value), vseg)
+            else:
+                put(field, re.sub(r"\s{2,}", " ", value).strip(" :-"), vseg)
+            break
+    # The issuing office is the letterhead: the top lines of page 1 that name an office
+    if fields["issuing_authority"] is None:
+        top = (pages[0]["height"] if pages else 842) * 0.3
+        head = [s for s in segments if s["page"] == 0 and s["bbox"][1] < top
+                and re.search(r"office|officer|department|services|brigade|corporation|panchayat|authority", s["text"], re.I)]
+        if head:
+            put("issuing_authority", " ".join(s["text"] for s in head[:2]), head[0])
+    return fields, where
+
+
+NOC_KEY_FIELDS = ["noc_number", "issuing_authority", "institute_name", "address", "issue_date", "valid_upto"]
+
+
+def extract_document(source: PdfSource) -> Dict[str, Any]:
+    """Like extract_fdr_fields, plus 'doc_type' (see src/doctype.py) and 'bytes'."""
+    from .doctype import classify
+    doc = read_document(source)
+    raw = "\n".join(s["text"] for s in doc["segments"])
+    dt = classify(raw)
+    if dt["type"] == "fire_noc":
+        fields, where = parse_noc_fields(doc["segments"], doc["pages"])
+        keys = NOC_KEY_FIELDS
+    else:
+        fields, where = parse_fields(doc["segments"], doc["pages"])
+        keys = KEY_FIELDS
+    present = [k for k in keys if fields.get(k) is not None]
+    return {"fields": fields, "locations": where, "pages": doc["pages"], "raw_text": raw,
+            "segments": doc["segments"], "method": doc["method"], "is_scanned": doc["method"] in ("ocr", "ocr-missing"),
+            "read_quality": doc["read_quality"], "confidence": round(len(present) / len(keys), 2),
+            "missing": [k for k in keys if k not in present], "doc_type": dt, "bytes": doc["bytes"]}

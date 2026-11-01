@@ -5,7 +5,7 @@ FDR-T03,FDR-T03.pdf,1-SYN-2026-0103,0,A,invalid_dates,R6,FAIL,2026-05-06,Deposit
 FDR-T04,FDR-T04.pdf,1-SYN-2026-0112,0,C,invalid_dates,R6,FAIL,2026-05-01,"Old FDR of 2014 that matured in 2024, re-submitted",KO272026002238,3500000,2014-06-12,2024-06-12,Pench Valley Institute of Technology
 FDR-T05,FDR-T05.pdf,1-SYN-2026-0110,1,B,name_mismatch,R5,FAIL,2026-05-03,Different institute's name,BU982026002018,1500000,2026-04-29,2036-04-29,Mahanadi Institute of Pharmacy
 FDR-T06,FDR-T06.pdf,1-SYN-2026-0110,0,A,none,,PASS,2026-05-06,,DN892026001090,1500000,2026-05-01,2036-05-01,Chilika Institute of Pharmaceutical Sciences
-FDR-T07,FDR-T07.pdf,1-SYN-2026-0101,0,B,altered,R8;R9,FAIL,2026-05-02,Figures overwritten to 35 L; words still read 25 L; bank record says 25 L,BU712026002316,3500000,2026-04-26,2036-04-26,Sahyadri Institute of Engineering and Research
+FDR-T07,FDR-T07.pdf,1-SYN-2026-0101,0,B,altered,R8;R9;A3,FAIL,2026-05-02,Figures overwritten to 35 L; words and the bank's QR still say 25 L,BU712026002316,3500000,2026-04-26,2036-04-26,Sahyadri Institute of Engineering and Research
 FDR-T08,FDR-T08.pdf,1-SYN-2026-0101,0,A,none,,PASS,2026-04-30,,DN872026000133,3500000,2026-04-26,2036-04-26,Sahyadri Institute of Engineering and Research
 FDR-T09,FDR-T09.pdf,1-SYN-2026-0108,0,A,name_mismatch,R5,FAIL,2026-05-12,Deposit made by an unrelated company,DN442026001960,1500000,2026-05-08,2036-05-08,Sai Krupa Hospitality Services Pvt. Ltd.
 FDR-T10,FDR-T10.pdf,1-SYN-2026-0109,0,C,none,,PASS,2026-05-02,,KO362026000944,3500000,2026-04-28,2036-04-28,Shivalik College of Engg.
@@ -23,3 +23,5 @@ FDR-T21,FDR-T21.pdf,1-SYN-2026-0108,0,B,none,,PASS,2026-05-14,,BU682026000898,15
 FDR-T22,FDR-T22.pdf,1-SYN-2026-0107,1,A,none,,PASS,2026-05-12,,DN532026000715,1500000,2026-05-07,2036-05-07,Malwa College of Computer Applications
 FDR-T23,FDR-T23.pdf,1-SYN-2026-0103,1,C,none,,PASS,2026-05-06,,KO132026000382,1500000,2026-04-30,2036-04-30,Godavari Institute of Management Studies
 FDR-T24,FDR-T24.pdf,1-SYN-2026-0107,0,B,ineligible_bank,R2,FAIL,2026-05-11,"NBFC, not a bank",SF842026001476,1500000,2026-05-07,2036-05-07,Malwa College of Computer Applications
+FDR-T25,FDR-T25.pdf,1-SYN-2026-0102,0,A,pdf_edited,A1;A2;A3;R9,FAIL,2026-05-01,Amount raised to 25 L in figures and words with a PDF editor; bank record and QR still say 15 L,DN232026090180,2500000,2026-04-25,2036-04-25,Narmada College of Pharmacy
+FDR-T26,FDR-T26.pdf,1-SYN-2026-0110,1,B,scan_pasted,A4;R9,FAIL,2026-05-06,Amount raised to 25 L by pasting a patch into the scan; bank record still says 15 L,BU242026090229,2500000,2026-05-01,2036-05-01,Chilika Institute of Pharmaceutical Sciences

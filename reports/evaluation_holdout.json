@@ -4,8 +4,8 @@
     "clean": 4,
     "defective": 4,
     "scanned": 2,
-    "document_accuracy": 0.875,
-    "defects_caught_by_right_rule": "4/4",
+    "document_accuracy": 0.75,
+    "defects_caught_by_right_rule": "3/4",
     "defective_passed_as_clean": 0,
     "clean_wrongly_failed": 0,
     "clean_sent_to_review": 1,
@@ -13,21 +13,30 @@
     "field_accuracy": {
       "FDR number": "8/8",
       "Amount": "7/8",
-      "Deposit date": "7/8",
-      "Maturity date": "7/8",
+      "Deposit date": "8/8",
+      "Maturity date": "8/8",
       "Depositor": "6/8"
     },
-    "avg_seconds_text_pdf": 0.04,
-    "avg_seconds_scan": 1.46,
-    "total_seconds": 3.2
+    "avg_seconds_text_pdf": 0.3,
+    "avg_seconds_scan": 3.78,
+    "total_seconds": 9.4
   },
   "per_rule": [
+    {
+      "rule": "D0",
+      "planted": 0,
+      "caught": 0,
+      "false_flags": 0,
+      "sent_to_review": 0,
+      "precision": null,
+      "recall": null
+    },
     {
       "rule": "R1",
       "planted": 1,
       "caught": 1,
       "false_flags": 0,
-      "sent_to_review": 0,
+      "sent_to_review": 1,
       "precision": 1.0,
       "recall": 1.0
     },
@@ -45,25 +54,25 @@
       "planted": 1,
       "caught": 1,
       "false_flags": 0,
-      "sent_to_review": 1,
+      "sent_to_review": 0,
       "precision": 1.0,
       "recall": 1.0
     },
     {
       "rule": "R4",
       "planted": 1,
-      "caught": 1,
+      "caught": 0,
       "false_flags": 0,
       "sent_to_review": 1,
-      "precision": 1.0,
-      "recall": 1.0
+      "precision": null,
+      "recall": 0.0
     },
     {
       "rule": "R5",
       "planted": 1,
       "caught": 1,
       "false_flags": 0,
-      "sent_to_review": 1,
+      "sent_to_review": 0,
       "precision": 1.0,
       "recall": 1.0
     },
@@ -72,7 +81,7 @@
       "planted": 0,
       "caught": 0,
       "false_flags": 0,
-      "sent_to_review": 1,
+      "sent_to_review": 0,
       "precision": null,
       "recall": null
     },
@@ -111,6 +120,42 @@
       "sent_to_review": 0,
       "precision": null,
       "recall": null
+    },
+    {
+      "rule": "A1",
+      "planted": 0,
+      "caught": 0,
+      "false_flags": 0,
+      "sent_to_review": 0,
+      "precision": null,
+      "recall": null
+    },
+    {
+      "rule": "A2",
+      "planted": 0,
+      "caught": 0,
+      "false_flags": 0,
+      "sent_to_review": 0,
+      "precision": null,
+      "recall": null
+    },
+    {
+      "rule": "A3",
+      "planted": 0,
+      "caught": 0,
+      "false_flags": 0,
+      "sent_to_review": 0,
+      "precision": null,
+      "recall": null
+    },
+    {
+      "rule": "A4",
+      "planted": 0,
+      "caught": 0,
+      "false_flags": 0,
+      "sent_to_review": 0,
+      "precision": null,
+      "recall": null
     }
   ],
   "documents": [
@@ -124,7 +169,7 @@
       "expected_rules": [],
       "failed_rules": [],
       "review_rules": [],
-      "seconds": 0.04,
+      "seconds": 0.41,
       "note": "held-out layout",
       "read_problems": []
     },
@@ -138,7 +183,7 @@
       "expected_rules": [],
       "failed_rules": [],
       "review_rules": [],
-      "seconds": 0.03,
+      "seconds": 0.32,
       "note": "held-out layout",
       "read_problems": []
     },
@@ -152,20 +197,13 @@
       "expected_rules": [],
       "failed_rules": [],
       "review_rules": [
-        "R2",
-        "R3",
-        "R4",
-        "R5",
-        "R6",
-        "R9"
+        "R1"
       ],
-      "seconds": 1.47,
+      "seconds": 4.27,
       "note": "held-out layout",
       "read_problems": [
-        "amount",
-        "deposit date",
-        "maturity date",
-        "depositor"
+        "depositor",
+        "payee (partly read)"
       ]
     },
     {
@@ -178,7 +216,7 @@
       "expected_rules": [],
       "failed_rules": [],
       "review_rules": [],
-      "seconds": 0.05,
+      "seconds": 0.33,
       "note": "held-out layout",
       "read_problems": []
     },
@@ -196,7 +234,7 @@
         "R3"
       ],
       "review_rules": [],
-      "seconds": 0.03,
+      "seconds": 0.28,
       "note": "held-out layout",
       "read_problems": []
     },
@@ -214,7 +252,7 @@
         "R1"
       ],
       "review_rules": [],
-      "seconds": 0.03,
+      "seconds": 0.24,
       "note": "held-out layout",
       "read_problems": []
     },
@@ -224,17 +262,20 @@
       "layout": "H",
       "defect": "short_amount",
       "truth": "FAIL",
-      "system": "FAIL",
+      "system": "UNCERTAIN",
       "expected_rules": [
         "R4"
       ],
-      "failed_rules": [
-        "R4"
+      "failed_rules": [],
+      "review_rules": [
+        "R2",
+        "R4",
+        "R9"
       ],
-      "review_rules": [],
-      "seconds": 1.46,
+      "seconds": 3.29,
       "note": "held-out layout",
       "read_problems": [
+        "amount",
         "depositor"
       ]
     },
@@ -252,7 +293,7 @@
         "R5"
       ],
       "review_rules": [],
-      "seconds": 0.05,
+      "seconds": 0.25,
       "note": "held-out layout",
       "read_problems": []
     }

@@ -99,3 +99,8 @@ code{font-size:.85em;background:#ECEFEA;padding:1px 4px;border-radius:2px}
 .bar .who a{color:#fff;margin-left:.6rem}
 details.panel summary{cursor:pointer}
 input[type=password]{font:inherit;font-size:.93rem;padding:7px 9px;border:1px solid #B9C0B6;border-radius:3px}
+.ocrwarn{background:#FBE9E7;color:#8A1C14;font-size:.86rem;padding:6px 24px;border-bottom:1px solid #F1C4BE}
+.ocrwarn a{color:#8A1C14}
+tr.fresh td{animation:flash 2.5s ease-out}
+@keyframes flash{from{background:#FFF3C4}to{background:transparent}}
+@media (prefers-reduced-motion:reduce){tr.fresh td{animation:none}}

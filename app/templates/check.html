@@ -14,8 +14,8 @@
       <div><span>Type</span> {{ c.app.institution_type }}{% if c.app.special_category %} (minority / women / NE slab){% endif %}</div>
       <div><span>Programmes</span> {{ c.app.programmes|join(', ') }}</div>
       <div><span>Letter of Approval</span> {{ c.app.loa_date|dmy }}</div>
-      <div><span>FDR received</span> {{ c.received|dmy }}</div>
-      <div><span>Security Deposit due</span> {% if c.overall == 'EXEMPT' %}Not required (exempt){% else %}Rs. {{ c.required|inr }}{% endif %}</div>
+      {% set is_fdr = not c.doc_type or c.doc_type.type != "fire_noc" %}<div><span>{{ "FDR" if is_fdr else "Document" }} received</span> {{ c.received|dmy }}</div>
+      {% if is_fdr %}<div><span>Security Deposit due</span> {% if c.overall == 'EXEMPT' %}Not required (exempt){% else %}Rs. {{ c.required|inr }}{% endif %}</div>{% else %}<div><span>Document</span> {{ c.doc_type.name }}</div>{% endif %}
     </div>
   </div>
   <div class="verdict {{ c.overall }}"><span class="small muted">System finding</span><b>{{ OVERALL_TEXT[c.overall] }}</b>
@@ -49,9 +49,9 @@
         <p class="small muted">The system does not reject anything. Confirm or overrule each point above, then record what happens next.</p>
         <p class="small">Recorded as <b>{{ user.name }}</b>.</p>
         <div class="row">
-          <button class="btn" name="action" value="accept">Accept FDR</button>
+          <button class="btn" name="action" value="accept">Accept {{ "FDR" if is_fdr else "document" }}</button>
           <button class="btn warn" name="action" value="letter">Prepare deficiency letter</button>
-          <button class="btn ghost" name="action" value="bank">Ask bank to confirm in writing</button>
+          {% if is_fdr %}<button class="btn ghost" name="action" value="bank">Ask bank to confirm in writing</button>{% endif %}
         </div>
       </div>
     {% endif %}

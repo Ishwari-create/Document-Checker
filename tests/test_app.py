@@ -13,9 +13,9 @@ pytestmark = pytest.mark.skipif(not (ROOT / "data" / "labels.csv").exists(), rea
 @pytest.fixture
 def client(tmp_path, monkeypatch):
     from app import app as web
-    from src.registry import Ledger
+    from src.registry import CaseStore, Ledger
     monkeypatch.setattr(web, "LEDGER", Ledger(db_path=None))
-    web.CASES.clear()
+    monkeypatch.setattr(web, "CASES", CaseStore(db_path=None))
     return web.app.test_client()
 
 

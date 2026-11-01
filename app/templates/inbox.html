@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block body %}
+<h1>Live inbox</h1>
+<p class="muted">Every PDF dropped into this folder is checked within a few seconds and appears below, newest first.</p>
+<div class="panel">
+  <label>Folder being watched</label>
+  <div class="row" style="align-items:center"><code id="folder" style="font-size:.95rem;padding:6px 10px">{{ folder }}</code>
+    <button class="btn ghost" type="button" onclick="navigator.clipboard.writeText(document.getElementById('folder').textContent)">Copy path</button>
+    <span id="live" class="st st-PASS">Watching</span></div>
+  <p class="small muted">The application is found from a sub-folder named after the application number, or from the institute name on the document, or the default below.</p>
+  <form method="post" class="row">
+    <div><label for="default_app">Default application</label><select id="default_app" name="default_app"><option value="">None</option>
+      {% for a in apps.values() %}<option value="{{ a.app_id }}" {% if settings.default_app==a.app_id %}selected{% endif %}>{{ a.app_id }} - {{ a.institute_name }}</option>{% endfor %}</select></div>
+    <div><label for="received">Treat files as received on</label><input type="date" id="received" name="received" value="{{ settings.received or '' }}"></div>
+    <button class="btn ghost">Save</button>
+  </form>
+  <p class="small muted">For the sample receipts in <code>data/test_documents</code>, set the date to 02 May 2026 (their submission window).</p>
+</div>
+<div class="tablewrap"><table id="ev">
+<thead><tr><th>Time</th><th>File</th><th>Document</th><th>Application</th><th>Finding</th><th>Points raised</th><th>Took</th></tr></thead>
+<tbody id="rows"><tr><td colspan="7" class="muted">Waiting for a file. Copy a receipt PDF into the folder above.</td></tr></tbody></table></div>
+<script>
+let seen = new Set();
+function esc(s){return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+async function poll(){
+  try{
+    const r = await fetch("{{ url_for('inbox_events') }}"); const j = await r.json();
+    document.getElementById('live').textContent = j.running ? 'Watching' : 'Stopped';
+    if(!j.events.length) return;
+    const tb = document.getElementById('rows'); tb.innerHTML='';
+    for(const e of j.events){
+      const tr=document.createElement('tr'); const key=e.at+e.file;
+      if(!seen.has(key)){tr.className='fresh'; seen.add(key);}
+      if(e.error){tr.innerHTML=`<td>${esc(e.at)}</td><td>${esc(e.file)}</td><td colspan="5" class="small" style="color:var(--fail)">${esc(e.error)}</td>`;}
+      else{tr.innerHTML=`<td>${esc(e.at)}</td><td><a href="/check/${esc(e.case)}">${esc(e.file)}</a></td><td class="small">${esc(e.doc_type)}</td>
+        <td class="small">${esc(e.institute)}<div class="muted">${esc(e.matched)}</div></td>
+        <td><span class="st st-${esc(e.overall)}">${esc(e.overall_text)}</span></td><td class="small">${(e.points||[]).map(esc).join('; ')}</td><td class="small">${esc(e.seconds)} s</td>`;}
+      tb.appendChild(tr);
+    }
+  }catch(err){}
+}
+poll(); setInterval(poll, 1500);
+</script>
+{% endblock %}

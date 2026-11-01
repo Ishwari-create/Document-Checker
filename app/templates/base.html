@@ -9,22 +9,25 @@
 </head>
 <body>
 <header class="bar">
-  <a class="brand" href="{{ url_for('queue') }}">SD Scrutiny Desk<span>Security Deposit FDR checks</span></a>
+  <a class="brand" href="{{ url_for('queue') }}">SD Scrutiny Desk<span>AICTE document scrutiny</span></a>
   {% set ep = request.endpoint %}
   {% if user %}<nav aria-label="Main">
     {% if user.role == 'officer' %}
-    <a href="{{ url_for('queue') }}" class="{{ 'on' if ep in ('queue','check','letter') }}">Received FDRs</a>
-    <a href="{{ url_for('upload') }}" class="{{ 'on' if ep=='upload' }}">Check a receipt</a>
+    <a href="{{ url_for('queue') }}" class="{{ 'on' if ep in ('queue','check','letter') }}">Received</a>
+    <a href="{{ url_for('upload') }}" class="{{ 'on' if ep=='upload' }}">Check</a>
+    <a href="{{ url_for('inbox') }}" class="{{ 'on' if ep=='inbox' }}">Live inbox</a>
+    <a href="{{ url_for('outbox') }}" class="{{ 'on' if ep=='outbox' }}">Letters</a>
     {% endif %}
-    <a href="{{ url_for('precheck') }}" class="{{ 'on' if ep=='precheck' }}">Institute self-check</a>
+    <a href="{{ url_for('precheck') }}" class="{{ 'on' if ep=='precheck' }}">Self-check</a>
     {% if user.role != 'institute' %}<a href="{{ url_for('fool') }}" class="{{ 'on' if ep=='fool' }}">Try to fool it</a>
-    <a href="{{ url_for('evaluation') }}" class="{{ 'on' if ep=='evaluation' }}">Test results</a>{% endif %}
+    <a href="{{ url_for('evaluation') }}" class="{{ 'on' if ep=='evaluation' }}">Results</a>{% endif %}
     <a href="{{ url_for('rules') }}" class="{{ 'on' if ep=='rules' }}">Rules</a>
-    {% if user.role in ('officer','auditor') %}<a href="{{ url_for('audit') }}" class="{{ 'on' if ep=='audit' }}">Audit trail</a>{% endif %}
+    {% if user.role in ('officer','auditor') %}<a href="{{ url_for('audit') }}" class="{{ 'on' if ep=='audit' }}">Audit</a>{% endif %}
   </nav>
   <div class="who">{{ user.name }} ({{ user.role }}) <a href="{{ url_for('logout') }}">Sign out</a></div>{% endif %}
 </header>
 <div class="synthetic">Prototype for SIH 2026 (PS SIH26261). Every institute, bank and receipt here is synthetic. Findings are advice to an officer, never a decision.</div>
+{% if ocr and ocr.message %}<div class="ocrwarn" role="status">{{ ocr.message }} <a href="https://github.com/Ishwari-create/Document-Checker#install-ocr-on-windows">How to install</a></div>{% endif %}
 <main>{% block body %}{% endblock %}</main>
 </body>
 </html>

@@ -18,17 +18,27 @@
 <tr><th>Field</th><th class="num">Exact match</th></tr>
 {% for k,v in s.field_accuracy.items() %}<tr><td>{{ k }}</td><td class="num">{{ v }}</td></tr>{% endfor %}
 </table></div></div></div>
-{% if hold %}
-<h2>Receipts in layouts it was never built for</h2>
-<p class="small">The test set above uses the three layouts the extractor was written against, so it flatters the extractor. To see what happens with a bank it has never seen, two further sets of 8 receipts were made in new layouts after the code was written. The first run on each is the honest number; set 1 was then used to widen the label wording, so only set 2 is still unseen.</p>
-<div class="tablewrap"><table>
-<tr><th>Set</th><th>First run, before any change</th><th>Now</th></tr>
-<tr><td>Unseen layout 1 (8 receipts, 2 scans)</td><td class="small">1 of 4 defects caught, 1 correct receipt wrongly failed, 0 defective receipts passed</td>
-<td class="small">{% set h=hold.holdout %}{{ h.defects_caught_by_right_rule }} defects caught, {{ h.clean_wrongly_failed }} wrongly failed, {{ h.defective_passed_as_clean }} defective passed, {{ h.clean_sent_to_review }} correct sent to review</td></tr>
-<tr><td>Unseen layout 2 (8 receipts, 2 scans)</td><td class="small">2 of 4 defects caught, 1 correct scan wrongly failed (amount misread), 0 defective receipts passed</td>
-<td class="small">{% set h=hold.holdout2 %}{{ h.defects_caught_by_right_rule }} defects caught, {{ h.clean_wrongly_failed }} wrongly failed, {{ h.defective_passed_as_clean }} defective passed, {{ h.clean_sent_to_review }} correct sent to review. Label wording not tuned; the scan rule below was added after this run.</td></tr>
+<h2>Forgeries that keep figures and words consistent</h2>
+<p class="small">Two receipts where the amount was raised in both figures and words, so the ordinary rules see nothing wrong. FDR-T25 was edited in a PDF editor; FDR-T26 is a scan with a pasted patch.</p>
+<div class="tablewrap"><table><tr><th>Receipt</th><th>How it was forged</th><th>Caught by</th><th>System</th></tr>
+{% for r in ev.documents if r.defect in ('pdf_edited','scan_pasted') %}<tr><td><a href="{{ url_for('check', case_id=r.doc) }}">{{ r.doc }}</a></td><td class="small">{{ r.note }}</td><td class="small">{{ r.failed_rules|join(', ') }}</td><td><span class="st st-{{ r.system }}">{{ OVERALL_TEXT[r.system] }}</span></td></tr>{% endfor %}
 </table></div>
-<p class="small muted">What this shows: on unfamiliar wording the checker mostly says "I could not read this, officer please look" rather than guessing. It has not yet passed a defective receipt. Since that run, an amount read from a scan can no longer fail a receipt unless the figures and words agree. Onboarding a new bank's wording is a change to <code>config/field_labels.yaml</code>.</p>
+
+{% if unseen %}
+<h2>Receipts in layouts it was never built for: label matching vs. with the ML extractor</h2>
+<p class="small">The ML field extractor was trained only on the 3 layouts above. These two sets use new layouts and new label wording. Set 1 was used earlier to widen the label wording; set 2 was never used for any tuning.</p>
+<div class="tablewrap"><table>
+<tr><th>Set</th><th>Run</th><th class="num">Document accuracy</th><th class="num">Defects caught</th><th class="num">Defective passed</th><th class="num">Correct sent to review</th><th>Maturity date read</th><th>Depositor read</th></tr>
+{% for u in unseen %}{% for label, s in (("Label matching only", u.before), ("With ML extractor", u.after)) %}
+<tr><td>{% if loop.first %}{{ u.name }}{% endif %}</td><td class="small">{{ label }}</td><td class="num">{{ '%.0f'|format(s.document_accuracy*100) }}%</td><td class="num">{{ s.defects_caught_by_right_rule }}</td><td class="num">{{ s.defective_passed_as_clean }}</td><td class="num">{{ s.clean_sent_to_review }} of {{ s.clean }}</td><td>{{ s.field_accuracy['Maturity date'] }}</td><td>{{ s.field_accuracy['Depositor'] }}</td></tr>
+{% endfor %}{% endfor %}
+</table></div>
+<p class="small muted">A value the ML extractor finds with low confidence, or on a scan, can never fail a document by itself: the point goes to an officer. That is why some defects show as "needs review" rather than "deficiency".</p>
+{% endif %}
+
+{% if noc %}
+<h2>Second rule pack: Fire NOC</h2>
+<p class="small">{{ noc.summary.documents }} synthetic Fire NOCs (4 correct; expired, wrong institute, wrong premises, not a fire authority). Document type recognised: {{ noc.summary.type_recognised }}/{{ noc.summary.documents }}. Defects caught by the right rule: {{ noc.summary.defects_caught_by_right_rule }}. Correct NOCs wrongly failed: {{ noc.summary.clean_wrongly_failed }}.</p>
 {% endif %}
 <h2>Every document</h2><div class="tablewrap"><table>
 <tr><th>Receipt</th><th>Planted defect</th><th>Expected</th><th>System</th><th>Failed</th><th>To review</th></tr>

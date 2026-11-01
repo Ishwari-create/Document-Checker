@@ -28,11 +28,12 @@ sys.path.insert(0, str(ROOT))
 from src.pipeline import load_applications, run_check          # noqa: E402
 from src.registry import IssuerConnector, Ledger                # noqa: E402
 
-RULES = ["R1", "R2", "R3", "R4", "R5", "R6", "R7", "R8", "R9", "R10"]
+RULES = ["D0", "R1", "R2", "R3", "R4", "R5", "R6", "R7", "R8", "R9", "R10", "A1", "A2", "A3", "A4"]
 
 
 def main():
     holdout = next((a.lstrip("-") for a in sys.argv if a in ("--holdout", "--holdout2")), None)
+    use_ml = "--no-ml" not in sys.argv
     base = ROOT / "data" / (holdout or "test_documents")
     apps = load_applications()
     issuer = IssuerConnector(base / "bank_confirmations.json") if holdout else IssuerConnector()
@@ -45,7 +46,7 @@ def main():
     for lab in labels:
         t0 = time.time()
         pdf = (base / lab["file"]).read_bytes()
-        out = run_check(pdf, apps[lab["app_id"]], submitted_on=date.fromisoformat(lab["submitted_on"]),
+        out = run_check(pdf, apps[lab["app_id"]], submitted_on=date.fromisoformat(lab["submitted_on"]), use_ml=use_ml,
                         issuer=issuer, ledger=ledger)
         secs = time.time() - t0
         status = {r["rule_id"]: r["status"] for r in out["results"]}
@@ -69,8 +70,8 @@ def main():
         rows.append({"doc": lab["doc_id"], "scanned": lab["scanned"] == "1", "layout": lab["layout"],
                      "defect": lab["defect_type"], "truth": lab["expected_overall"], "system": out["overall"],
                      "expected_rules": sorted(truth),
-                     "failed_rules": sorted([r for r, s in status.items() if s == "FAIL"], key=lambda x: int(x[1:])),
-                     "review_rules": sorted([r for r, s in status.items() if s == "UNCERTAIN"], key=lambda x: int(x[1:])),
+                     "failed_rules": sorted([r for r, s in status.items() if s == "FAIL"], key=lambda x: RULES.index(x) if x in RULES else 99),
+                     "review_rules": sorted([r for r, s in status.items() if s == "UNCERTAIN"], key=lambda x: RULES.index(x) if x in RULES else 99),
                      "seconds": round(secs, 2), "note": lab["note"],
                      "read_problems": [k for k, g, t in [
                          ("FDR number", f["fdr_number"], lab["true_fdr_no"]), ("amount", f["amount"], float(lab["true_amount"])),
@@ -114,7 +115,7 @@ def main():
 
     out_dir = ROOT / "reports"
     out_dir.mkdir(exist_ok=True)
-    stem = f"evaluation_{holdout}" if holdout else "evaluation"
+    stem = (f"evaluation_{holdout}" if holdout else "evaluation") + ("" if use_ml else "_noml")
     (out_dir / f"{stem}.json").write_text(json.dumps({"summary": summary, "per_rule": per_rule, "documents": rows},
                                                         indent=2))
     write_markdown(out_dir / f"{stem}.md", summary, per_rule, rows)

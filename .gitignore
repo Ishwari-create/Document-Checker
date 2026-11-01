@@ -222,3 +222,5 @@ __marimo__/
 # runtime
 data/ledger.sqlite3
 .env
+inbox/
+data/outbox/

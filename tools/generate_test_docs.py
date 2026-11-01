@@ -202,6 +202,25 @@ def layout_c(c, d, w, h):
     c.drawString(w - 230, 70, "Manager / Authorised Officer")
 
 
+def qr_payload(d: dict) -> str:
+    """What the bank's QR code carries: FDR number, amount, maturity date, IFSC (bank's own record)."""
+    amount = int(d.get("qr_amount", d["amount"]))
+    return f"FDR|{d['fdr_no']}|{amount}|{d['maturity'].isoformat()}|{d['ifsc']}"
+
+
+def draw_qr(c, d, layout):
+    from reportlab.graphics import renderPDF
+    from reportlab.graphics.barcode.qr import QrCodeWidget
+    from reportlab.graphics.shapes import Drawing
+    size = 78
+    widget = QrCodeWidget(qr_payload(d))
+    x0, y0, x1, y1 = widget.getBounds()
+    dr = Drawing(size, size, transform=[size / (x1 - x0), 0, 0, size / (y1 - y0), 0, 0])
+    dr.add(widget)
+    x, y = {"A": (52, 62), "B": (45, 52), "C": (60, 50)}[layout]
+    renderPDF.draw(dr, c, x, y)
+
+
 def render_pdf(d: dict) -> bytes:
     buf = io.BytesIO()
     layout = BANKS[d["bank_key"]]["layout"]
@@ -211,23 +230,36 @@ def render_pdf(d: dict) -> bytes:
     c.setAuthor(d["bank"])
     w, h = size
     {"A": layout_a, "B": layout_b, "C": layout_c}[layout](c, d, w, h)
+    draw_qr(c, d, layout)
     watermark(c, w, h)
     c.showPage(); c.save()
     return buf.getvalue()
 
 
-def rasterise(pdf_bytes: bytes, seed: int) -> bytes:
-    """Simulate a photocopy scan: 150 dpi, grey, slight skew, blur and speckle."""
-    r = random.Random(seed)
-    img = render_pages(pdf_bytes, 150, last_page=1)[0].convert("L")
+def paper_scan(img, r: random.Random):
+    """Turn a clean grey page into a photocopy: off-white paper with grain, slight skew and blur."""
+    import numpy as np
     img = img.rotate(r.uniform(-1.2, 1.2), expand=False, fillcolor=255)
     img = img.filter(ImageFilter.GaussianBlur(0.6))
+    a = np.asarray(img, dtype=float)
+    a = a * (238 / 255) + np.random.default_rng(r.randrange(10**9)).normal(0, 5, a.shape)
+    return Image.fromarray(np.clip(a, 0, 255).astype("uint8")).copy()
+
+
+def speckle(img, r: random.Random):
     px = img.load()
     for _ in range(img.width * img.height // 220):
         x, y = r.randrange(img.width), r.randrange(img.height)
         px[x, y] = r.choice((0, 90, 200))
+    return img
+
+
+def rasterise(pdf_bytes: bytes, seed: int) -> bytes:
+    """Simulate a photocopy scan: 150 dpi, grey paper with grain, slight skew, blur and speckle."""
+    r = random.Random(seed)
+    img = speckle(paper_scan(render_pages(pdf_bytes, 150, last_page=1)[0].convert("L"), r), r)
     out = io.BytesIO()
-    img.save(out, "PDF", resolution=150)
+    img.save(out, "PDF", resolution=150, quality=85)
     return out.getvalue()
 
 
@@ -337,12 +369,57 @@ def build_set():
     # --- D7 altered receipt ---------------------------------------------------------
     n += 1; d = base_doc("1-SYN-2026-0101", "BUB", n)
     d["words"] = in_words(2500000)   # figures say 35 L, words still say 25 L
-    add(d, "altered", "R8;R9", note="Figures overwritten to 35 L; words still read 25 L; bank record says 25 L")
+    d["qr_amount"] = 2500000         # the bank's QR still carries the true amount
+    add(d, "altered", "R8;R9;A3", note="Figures overwritten to 35 L; words and the bank's QR still say 25 L")
     n += 1; d = base_doc("1-SYN-2026-0109", "DNB", n)
     d["issuer_override"] = {"amount": 350000.0}
     add(d, "altered", "R9", note="Receipt is internally consistent, but the bank's record shows Rs. 3,50,000")
 
     return docs
+
+
+def build_forgeries():
+    """Two careful forgeries: the amount is raised in both figures and words, so the
+    ordinary rules see a consistent receipt. Only the bank record and the
+    authenticity checks can catch them."""
+    from pypdf import PdfReader, PdfWriter
+    out = []
+
+    # T25: digital receipt edited in a PDF editor and saved again (incremental update)
+    d = base_doc("1-SYN-2026-0102", "DNB", 901)                 # Pharmacy: 15 L required and deposited
+    d.update(scanned=False, defect="pdf_edited", note="Amount raised to 25 L in figures and words with a PDF editor; "
+             "bank record and QR still say 15 L", fail_rules="A1;A2;A3;R9", printed_amount=2500000)
+    original = render_pdf(d)
+    over = io.BytesIO()
+    c = canvas.Canvas(over, pagesize=A4, invariant=1)
+    w, h = A4
+    y_amt, y_words = h - 145 - 3 * 22, h - 145 - 4 * 22
+    for y, text in ((y_amt, "Deposit Amount : Rs. 25,00,000.00"), (y_words, "Amount in words : Rupees Twenty Five Lakh Only")):
+        c.setFillColor(Color(1, 1, 1)); c.rect(58, y - 4, 330, 15, fill=1, stroke=0)
+        c.setFillColor(black); c.setFont("Courier", 10); c.drawString(60, y, text)
+    c.showPage(); c.save()
+    w_ = PdfWriter(io.BytesIO(original), incremental=True)
+    w_.pages[0].merge_page(PdfReader(io.BytesIO(over.getvalue())).pages[0])
+    w_.add_metadata({"/Producer": "PDFescape Online Editor", "/ModDate": "D:20260512101500+05'30'"})
+    buf = io.BytesIO(); w_.write(buf)
+    out.append(("FDR-T25", d, buf.getvalue()))
+
+    # T26: scanned receipt with a new amount pasted in as a crisp image patch
+    d = base_doc("1-SYN-2026-0110", "BUB", 902)                 # Pharmacy: 15 L
+    d.update(scanned=True, defect="scan_pasted", note="Amount raised to 25 L by pasting a patch into the scan; "
+             "bank record still says 15 L", fail_rules="A4;R9", printed_amount=2500000)
+    genuine = render_pdf(d)
+    fake = dict(d, amount=2500000, words=in_words(2500000))
+    r = random.Random(902)
+    base = paper_scan(render_pages(genuine, 150, last_page=1)[0].convert("L"), r)
+    patch_src = render_pages(render_pdf(fake), 150, last_page=1)[0].convert("L")   # clean digital text, no paper grain
+    k = 150 / 72                     # amount and words rows of layout B (value column), pixels at 150 dpi
+    box = (int(225 * k), int((150 + 3 * 24 - 14) * k), int(520 * k), int((150 + 4 * 24 + 8) * k))
+    base.paste(patch_src.crop(box), box[:2])
+    base = speckle(base, r)
+    pdf = io.BytesIO(); base.save(pdf, "PDF", resolution=150, quality=85)
+    out.append(("FDR-T26", d, pdf.getvalue()))
+    return out
 
 
 def main():
@@ -384,6 +461,23 @@ def main():
                 rec["amount"] = 2500000.0          # bank knows the true (unaltered) amount
             rec.update(d.get("issuer_override", {}))
             confirmations[d["fdr_no"]] = rec
+
+    # --- Forgeries that keep figures and words consistent (authenticity checks needed) ---
+    for doc_id, d, pdf in build_forgeries():
+        (OUT / f"{doc_id}.pdf").write_bytes(pdf)
+        specs[doc_id] = {k: (v.isoformat() if isinstance(v, date) else v) for k, v in d.items()}
+        labels.append({
+            "doc_id": doc_id, "file": f"{doc_id}.pdf", "app_id": d["app_id"], "scanned": int(d["scanned"]),
+            "layout": BANKS[d["bank_key"]]["layout"], "defect_type": d["defect"],
+            "expected_fail_rules": d["fail_rules"], "expected_overall": "FAIL",
+            "submitted_on": d["submitted"].isoformat(), "note": d["note"],
+            "true_fdr_no": d["fdr_no"], "true_amount": d["printed_amount"],
+            "true_issue": d["issue"].isoformat(), "true_maturity": d["maturity"].isoformat(),
+            "true_depositor": d["depositor"],
+        })
+        confirmations[d["fdr_no"]] = {"bank": d["bank"], "amount": float(d["amount"]),
+                                      "issue_date": d["issue"].isoformat(), "maturity_date": d["maturity"].isoformat(),
+                                      "depositor_name": d["depositor"], "lien": "Member Secretary, AICTE"}
 
     with open(ROOT / "data" / "labels.csv", "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=list(labels[0].keys()))

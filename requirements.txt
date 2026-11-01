@@ -1,9 +1,17 @@
-# Reading receipts
-pdfplumber>=0.10.0
-pytesseract>=0.3.10        # needs the tesseract-ocr system package
-pdf2image>=1.16.0          # needs poppler-utils
+# Reading documents
+pdfplumber>=0.10.0         # text layer and page previews (no system install needed)
+pypdf>=4.0.0
+pikepdf>=8.0.0             # PDF edit history and embedded scan images (authenticity checks)
+pytesseract>=0.3.10        # needs the Tesseract program for scanned copies (see README)
+pdf2image>=1.16.0          # optional: uses Poppler for sharper OCR renders when installed
 Pillow>=10.0.0
+numpy>=1.24
+opencv-python-headless>=4.8   # QR code reading
 PyYAML>=6.0.1
+
+# ML field extractor (runs offline on CPU)
+scikit-learn>=1.3
+joblib>=1.3
 
 # Web app
 Flask>=3.0.0

@@ -141,10 +141,11 @@
   "maturity": "2036-04-26",
   "rate": 7.1,
   "submitted": "2026-05-02",
+  "qr_amount": 2500000,
   "defect": "altered",
-  "fail_rules": "R8;R9",
+  "fail_rules": "R8;R9;A3",
   "scanned": false,
-  "note": "Figures overwritten to 35 L; words still read 25 L; bank record says 25 L"
+  "note": "Figures overwritten to 35 L; words and the bank's QR still say 25 L"
  },
  "FDR-T08": {
   "app_id": "1-SYN-2026-0101",
@@ -505,5 +506,49 @@
   "fail_rules": "R2",
   "scanned": false,
   "note": "NBFC, not a bank"
+ },
+ "FDR-T25": {
+  "app_id": "1-SYN-2026-0102",
+  "bank_key": "DNB",
+  "bank": "Deccan National Bank",
+  "branch": "Station Road",
+  "ifsc": "DNBK0486025",
+  "fdr_no": "DN232026090180",
+  "depositor": "Narmada College of Pharmacy",
+  "beneficiary": "Member Secretary, AICTE, New Delhi",
+  "amount": 1500000,
+  "words": "Rupees Fifteen Lakh Only",
+  "issue": "2026-04-25",
+  "months": 120,
+  "maturity": "2036-04-25",
+  "rate": 7.1,
+  "submitted": "2026-05-01",
+  "scanned": false,
+  "defect": "pdf_edited",
+  "note": "Amount raised to 25 L in figures and words with a PDF editor; bank record and QR still say 15 L",
+  "fail_rules": "A1;A2;A3;R9",
+  "printed_amount": 2500000
+ },
+ "FDR-T26": {
+  "app_id": "1-SYN-2026-0110",
+  "bank_key": "BUB",
+  "bank": "Bharat Union Bank",
+  "branch": "Market Yard",
+  "ifsc": "BUBL0443128",
+  "fdr_no": "BU242026090229",
+  "depositor": "Chilika Institute of Pharmaceutical Sciences",
+  "beneficiary": "Member Secretary, AICTE, New Delhi",
+  "amount": 1500000,
+  "words": "Rupees Fifteen Lakh Only",
+  "issue": "2026-05-01",
+  "months": 120,
+  "maturity": "2036-05-01",
+  "rate": 6.75,
+  "submitted": "2026-05-06",
+  "scanned": true,
+  "defect": "scan_pasted",
+  "note": "Amount raised to 25 L by pasting a patch into the scan; bank record still says 15 L",
+  "fail_rules": "A4;R9",
+  "printed_amount": 2500000
  }
 }

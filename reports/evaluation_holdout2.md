@@ -8,22 +8,22 @@ These are synthetic receipts from three invented bank layouts. The numbers show 
 
 | Measure | Result |
 |---|---|
-| Document-level accuracy (PASS/FAIL/REVIEW matches truth) | 25% |
+| Document-level accuracy (PASS/FAIL/REVIEW matches truth) | 62% |
 | Planted defects caught by the right rule | 2/4 |
 | Defective documents passed as clean | 0 |
 | Clean documents wrongly failed (false alarms) | 0 of 4 |
-| Clean documents sent to an officer for review | 4 of 4 |
-| Time per document: digital PDF / scan | 0.03 s / 1.44 s |
+| Clean documents sent to an officer for review | 1 of 4 |
+| Time per document: digital PDF / scan | 0.46 s / 3.4 s |
 
 ## Field extraction
 
 | Field | Exact match |
 |---|---|
-| FDR number | 7/8 |
-| Amount | 7/8 |
+| FDR number | 8/8 |
+| Amount | 8/8 |
 | Deposit date | 8/8 |
-| Maturity date | 0/8 |
-| Depositor | 0/8 |
+| Maturity date | 7/8 |
+| Depositor | 7/8 |
 
 ## Per rule
 
@@ -31,35 +31,37 @@ A rule 'catches' a document when it returns FAIL. 'Sent to review' counts UNCERT
 
 | Rule | Planted | Caught | False flags | Sent to review | Precision | Recall |
 |---|---|---|---|---|---|---|
-| R1 | 1 | 0 | 0 | 8 | - | 0.00 |
-| R2 | 0 | 0 | 0 | 1 | - | - |
-| R3 | 1 | 1 | 0 | 7 | 1.00 | 1.00 |
-| R4 | 1 | 1 | 0 | 1 | 1.00 | 1.00 |
-| R5 | 1 | 0 | 0 | 8 | - | 0.00 |
-| R6 | 0 | 0 | 0 | 8 | - | - |
+| D0 | 0 | 0 | 0 | 0 | - | - |
+| R1 | 1 | 0 | 0 | 2 | - | 0.00 |
+| R2 | 0 | 0 | 0 | 0 | - | - |
+| R3 | 1 | 1 | 0 | 1 | 1.00 | 1.00 |
+| R4 | 1 | 1 | 0 | 0 | 1.00 | 1.00 |
+| R5 | 1 | 0 | 0 | 1 | - | 0.00 |
+| R6 | 0 | 0 | 0 | 1 | - | - |
 | R7 | 0 | 0 | 0 | 0 | - | - |
-| R8 | 0 | 0 | 0 | 1 | - | - |
-| R9 | 0 | 0 | 0 | 2 | - | - |
+| R8 | 0 | 0 | 0 | 0 | - | - |
+| R9 | 0 | 0 | 0 | 0 | - | - |
 | R10 | 0 | 0 | 0 | 0 | - | - |
+| A1 | 0 | 0 | 0 | 0 | - | - |
+| A2 | 0 | 0 | 0 | 0 | - | - |
+| A3 | 0 | 0 | 0 | 0 | - | - |
+| A4 | 0 | 0 | 0 | 0 | - | - |
 
 ## Every document
 
 | Doc | Scan | Planted defect | Truth | System | Failed rules | Review |
 |---|---|---|---|---|---|---|
-| FDR-J01 |  | none | PASS | UNCERTAIN |  | R1, R3, R5, R6 |
-| FDR-J02 | yes | none | PASS | UNCERTAIN |  | R1, R3, R4, R5, R6, R8, R9 |
-| FDR-J03 |  | none | PASS | UNCERTAIN |  | R1, R3, R5, R6 |
-| FDR-J04 |  | none | PASS | UNCERTAIN |  | R1, R3, R5, R6 |
-| FDR-J05 |  | short_tenure | FAIL | FAIL | R3 | R1, R5, R6 |
-| FDR-J06 | yes | wrong_beneficiary | FAIL | UNCERTAIN |  | R1, R2, R3, R5, R6, R9 |
-| FDR-J07 |  | short_amount | FAIL | FAIL | R4 | R1, R3, R5, R6 |
-| FDR-J08 |  | name_mismatch | FAIL | UNCERTAIN |  | R1, R3, R5, R6 |
+| FDR-J01 |  | none | PASS | PASS |  |  |
+| FDR-J02 | yes | none | PASS | UNCERTAIN |  | R1, R3, R6 |
+| FDR-J03 |  | none | PASS | PASS |  |  |
+| FDR-J04 |  | none | PASS | PASS |  |  |
+| FDR-J05 |  | short_tenure | FAIL | FAIL | R3 |  |
+| FDR-J06 | yes | wrong_beneficiary | FAIL | UNCERTAIN |  | R1 |
+| FDR-J07 |  | short_amount | FAIL | FAIL | R4 |  |
+| FDR-J08 |  | name_mismatch | FAIL | UNCERTAIN |  | R5 |
 
 ## Where it went wrong
 
-- **FDR-J01** (none): truth PASS, system UNCERTAIN; review flags R1, R3, R5, R6. Misread or not found: maturity date, depositor, payee (partly read).
-- **FDR-J02** (scan, none): truth PASS, system UNCERTAIN; review flags R1, R3, R4, R5, R6, R8, R9. Misread or not found: amount, maturity date, depositor, payee (partly read).
-- **FDR-J03** (none): truth PASS, system UNCERTAIN; review flags R1, R3, R5, R6. Misread or not found: maturity date, depositor, payee (partly read).
-- **FDR-J04** (none): truth PASS, system UNCERTAIN; review flags R1, R3, R5, R6. Misread or not found: maturity date, depositor, payee (partly read).
-- **FDR-J06** (scan, wrong_beneficiary): truth FAIL, system UNCERTAIN; review flags R1, R2, R3, R5, R6, R9. Misread or not found: FDR number, maturity date, depositor, payee (partly read).
-- **FDR-J08** (name_mismatch): truth FAIL, system UNCERTAIN; review flags R1, R3, R5, R6. Misread or not found: maturity date, depositor, payee (partly read).
+- **FDR-J02** (scan, none): truth PASS, system UNCERTAIN; review flags R1, R3, R6. Misread or not found: maturity date, depositor, payee (partly read).
+- **FDR-J06** (scan, wrong_beneficiary): truth FAIL, system UNCERTAIN; review flags R1. Misread or not found: payee (partly read).
+- **FDR-J08** (name_mismatch): truth FAIL, system UNCERTAIN; review flags R5. Misread or not found: nothing.

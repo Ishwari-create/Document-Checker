@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block body %}
+<h1>Letters sent</h1>
+<p class="muted">{% if smtp %}Letters are sent by email through the configured mail server.{% else %}Mail server not configured: letters are saved as .eml files in <code>data/outbox</code> (they open in Outlook). Set SMTP_HOST, SMTP_USER and SMTP_PASSWORD to send for real.{% endif %}</p>
+<div class="tablewrap"><table>
+<tr><th>When</th><th>Institute</th><th>To</th><th>Status</th><th>By</th><th>Case</th></tr>
+{% for c in rows %}<tr><td>{{ c.email.at|replace('T',' ') }}</td><td>{{ c.app.institute_name }}</td><td>{{ c.email.to }}</td>
+<td><span class="st st-{{ 'PASS' if c.email.status=='sent' else 'UNCERTAIN' }}">{{ 'Sent' if c.email.status=='sent' else 'In outbox' }}</span></td>
+<td class="small">{{ c.email.by }}</td><td><a href="{{ url_for('letter', case_id=c.id) }}">{{ c.id }}</a></td></tr>
+{% else %}<tr><td colspan="6" class="muted">No letters yet. Prepare a deficiency letter from a case, then approve and email it.</td></tr>{% endfor %}
+</table></div>
+{% endblock %}

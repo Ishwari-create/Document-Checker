@@ -117,3 +117,69 @@ class Ledger:
         q += " ORDER BY id DESC LIMIT ?"
         cols = ["at", "actor", "action", "app_id", "sha256", "rules_version", "outcome", "detail"]
         return [dict(zip(cols, r)) for r in self.conn.execute(q, args + (limit,)).fetchall()]
+
+
+class CaseStore:
+    """Cases (receipt + findings + officer decisions) kept in SQLite so they survive a restart.
+    Behaves like a dict of case_id -> case; call save(case) after changing a case in place."""
+
+    def __init__(self, db_path: Optional[Path] = DEFAULT_DB):
+        self.conn = sqlite3.connect(str(db_path) if db_path else ":memory:", check_same_thread=False)
+        self.conn.execute("CREATE TABLE IF NOT EXISTS cases (id TEXT PRIMARY KEY, origin TEXT, app_id TEXT, "
+                          "received TEXT, pdf BLOB, data TEXT, updated_at TEXT)")
+        self.conn.commit()
+        self._cache: Dict[str, dict] = {}
+
+    @staticmethod
+    def _decode(row) -> dict:
+        from datetime import date as _date
+        cid, origin, app_id, received, pdf, data = row
+        case = json.loads(data)
+        case.update(id=cid, origin=origin, pdf=bytes(pdf), received=_date.fromisoformat(received))
+        return case
+
+    def save(self, case: dict) -> None:
+        data = {k: v for k, v in case.items() if k not in ("pdf", "received", "id", "origin")}
+        self.conn.execute("INSERT OR REPLACE INTO cases VALUES (?,?,?,?,?,?,?)",
+                          (case["id"], case["origin"], case.get("app", {}).get("app_id"), case["received"].isoformat(),
+                           case["pdf"], json.dumps(data, default=str), datetime.now().isoformat(timespec="seconds")))
+        self.conn.commit()
+        self._cache[case["id"]] = case
+
+    def __setitem__(self, cid: str, case: dict) -> None:
+        case["id"] = cid
+        self.save(case)
+
+    def get(self, cid: str, default=None):
+        if cid in self._cache:
+            return self._cache[cid]
+        row = self.conn.execute("SELECT id, origin, app_id, received, pdf, data FROM cases WHERE id=?", (cid,)).fetchone()
+        if not row:
+            return default
+        self._cache[cid] = self._decode(row)
+        return self._cache[cid]
+
+    def __getitem__(self, cid: str) -> dict:
+        case = self.get(cid)
+        if case is None:
+            raise KeyError(cid)
+        return case
+
+    def __contains__(self, cid: str) -> bool:
+        return self.get(cid) is not None
+
+    def pop(self, cid: str, default=None):
+        case = self.get(cid, default)
+        self.conn.execute("DELETE FROM cases WHERE id=?", (cid,))
+        self.conn.commit()
+        self._cache.pop(cid, None)
+        return case
+
+    def values(self) -> List[dict]:
+        ids = [r[0] for r in self.conn.execute("SELECT id FROM cases ORDER BY updated_at")]
+        return [self.get(i) for i in ids]
+
+    def clear(self) -> None:
+        self.conn.execute("DELETE FROM cases")
+        self.conn.commit()
+        self._cache.clear()

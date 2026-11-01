@@ -181,6 +181,22 @@
       "maturity_date": "2036-04-30",
       "depositor_name": "Godavari Institute of Management Studies",
       "lien": "Member Secretary, AICTE"
+    },
+    "DN232026090180": {
+      "bank": "Deccan National Bank",
+      "amount": 1500000.0,
+      "issue_date": "2026-04-25",
+      "maturity_date": "2036-04-25",
+      "depositor_name": "Narmada College of Pharmacy",
+      "lien": "Member Secretary, AICTE"
+    },
+    "BU242026090229": {
+      "bank": "Bharat Union Bank",
+      "amount": 1500000.0,
+      "issue_date": "2026-05-01",
+      "maturity_date": "2036-05-01",
+      "depositor_name": "Chilika Institute of Pharmaceutical Sciences",
+      "lien": "Member Secretary, AICTE"
     }
   }
 }

@@ -1,0 +1,47 @@
+pack: fire_noc
+version: "2026.11-n1"
+document_label: "Fire Safety No Objection Certificate"
+
+sources:
+  APH_DOCS: >-
+    AICTE Approval Process Handbook: list of documents for approval, which includes a
+    fire safety certificate / NOC from the competent authority (exact clause to confirm)
+  PRACTICE: "Standard scrutiny check, not a handbook clause"
+
+rules:
+  - id: N1
+    name: "Issued by a fire service authority"
+    problem: "Not issued by a fire authority"
+    severity: FATAL
+    source: APH_DOCS
+    clause: "APH: documents required (to confirm)"
+    verified: false
+    authority_patterns: ['fire', 'chief\s*fire\s*officer', 'fire\s*(and|&)\s*emergency', 'fire\s*brigade']
+    fix_hint: "Submit the NOC issued by the Chief Fire Officer / Fire and Emergency Services of your area."
+  - id: N2
+    name: "Valid on the date of submission"
+    problem: "NOC expired or not yet valid"
+    severity: FATAL
+    source: APH_DOCS
+    clause: "APH: documents required (to confirm)"
+    verified: false
+    warn_days: 90
+    fix_hint: "Renew the Fire NOC and submit the current certificate."
+  - id: N3
+    name: "Issued to the applicant institute"
+    problem: "NOC is for a different institute"
+    severity: FATAL
+    source: PRACTICE
+    clause: "Scrutiny practice"
+    verified: true
+    pass_score: 88
+    review_score: 70
+    fix_hint: "The NOC must name the applicant institute exactly as registered on the AICTE portal."
+  - id: N4
+    name: "Covers the applicant's premises"
+    problem: "NOC is for different premises"
+    severity: FATAL
+    source: PRACTICE
+    clause: "Scrutiny practice"
+    verified: true
+    fix_hint: "The NOC must be for the campus address given in the application (same PIN code)."

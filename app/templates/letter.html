@@ -5,5 +5,16 @@
 <p><a class="btn" href="{{ url_for('letter_pdf', case_id=c.id) }}">Download PDF</a>
    <a class="btn ghost" href="{{ url_for('letter', case_id=c.id, download=1) }}">Download as text</a>
    <a class="btn ghost" href="{{ url_for('check', case_id=c.id) }}">Back to the case</a></p>
+{% if error %}<div class="err">{{ error }}</div>{% endif %}
+{% if c.email %}
+  <div class="note"><b>{{ 'Emailed' if c.email.status == 'sent' else 'Saved to outbox' }}</b> to {{ c.email.to }} on {{ c.email.at|replace('T',' ') }} by {{ c.email.by }}.
+  {% if c.email.status != 'sent' %}{{ c.email.note }} File: <code>{{ c.email.where }}</code>{% endif %}</div>
+{% elif c.decision and c.decision.action == 'letter' %}
+  <form class="panel row" method="post" action="{{ url_for('email_letter', case_id=c.id) }}">
+    <div style="flex:1"><label for="to">Send to the institute</label><input type="text" id="to" name="to" value="{{ c.app.contact_email }}" style="width:100%"></div>
+    <button class="btn warn">Approve and email letter</button>
+  </form>
+  <p class="small muted">The PDF goes out without the DRAFT line, from the Regional Office address. The send is recorded in the audit trail.</p>
+{% endif %}
 <pre class="letter">{{ text }}</pre>
 {% endblock %}

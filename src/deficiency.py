@@ -23,7 +23,7 @@ def generate_deficiency_letter(fields: Dict[str, Any], rule_results: List[Dict[s
                                application_context: Dict[str, Any], officer_name: Optional[str] = None,
                                reference_number: Optional[str] = None,
                                confirmed_rule_ids: Optional[Iterable[str]] = None,
-                               draft: bool = True) -> str:
+                               draft: bool = True, document_label: Optional[str] = None) -> str:
     today = datetime.today()
     inst = application_context.get("institute_name") or fields.get("depositor_name") or "the Institute"
     app_id = application_context.get("app_id", "-")
@@ -35,10 +35,12 @@ def generate_deficiency_letter(fields: Dict[str, Any], rule_results: List[Dict[s
         L += ["DRAFT - generated for officer review. Not issued until approved by the Regional Office.", ""]
     L += [f"Ref: {ref}", f"Date: {today:%d %B %Y}", "",
           "To", "The Principal / Director", inst, f"Application No.: {app_id}", "",
-          "Subject: Deficiencies in the Security Deposit (FDR) submitted with your application", "",
-          f"FDR No. {fields.get('fdr_number') or 'not readable'}, issued by {fields.get('bank_name') or 'bank not readable'}.",
+          f"Subject: Deficiencies in the {document_label or 'Security Deposit (FDR)'} submitted with your application", "",
+          (f"FDR No. {fields.get('fdr_number') or 'not readable'}, issued by {fields.get('bank_name') or 'bank not readable'}."
+           if "noc_number" not in fields else
+           f"NOC No. {fields.get('noc_number') or 'not readable'}, issued by {fields.get('issuing_authority') or 'not readable'}."),
           "", "Sir / Madam,", "",
-          "The Fixed Deposit Receipt submitted towards the Security Deposit has been scrutinised. "
+          "The document submitted with your application has been scrutinised. "
           "The following points need to be rectified:", ""]
     if not items:
         L += ["  No deficiency has been confirmed.", ""]
@@ -46,7 +48,7 @@ def generate_deficiency_letter(fields: Dict[str, Any], rule_results: List[Dict[s
         L += [f"  {i}. {r.get('problem') or r['name']}  [{r['rule_id']}; {r['clause']}]",
               f"     Found: {r['evidence']}",
               f"     Required action: {r.get('fix') or r.get('reasoning', '')}", ""]
-    L += ["Please submit the rectified FDR (original to the Regional Office, scanned copy on the portal) "
+    L += ["Please submit the rectified document (original to the Regional Office, scanned copy on the portal) "
           "along with the affidavit, within the time allowed by the Regional Office.", "",
           "Yours faithfully,", "", officer_name or "Scrutiny Officer", "Regional Office", ""]
     return "\n".join(L)

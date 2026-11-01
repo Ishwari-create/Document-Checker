@@ -1,0 +1,16 @@
+# Label wording used on Fire NOCs, per field (same format as field_labels.yaml).
+fields:
+  - field: valid_upto
+    pattern: '(valid\s*(up\s*to|upto|till)|validity|expiry\s*date|valid\s*until)'
+  - field: issue_date
+    pattern: '(date\s*of\s*issue|issue\s*date|issued\s*on|dated)'
+  - field: noc_number
+    pattern: '(noc|certificate|ref(erence)?|letter)\s*(no|number|#)'
+  - field: institute_name
+    pattern: '(issued\s*to|name\s*of\s*(the\s*)?(institut\w*|occupier|applicant|establishment)|occupier|applicant)'
+  - field: address
+    pattern: '(premises|address(\s*of\s*(the\s*)?premises)?|location|situated\s*at)'
+  - field: buildings
+    pattern: '(buildings?\s*covered|blocks?\s*covered|buildings?|blocks?)'
+  - field: issuing_authority
+    pattern: '(issuing\s*authority|issued\s*by|authority)'

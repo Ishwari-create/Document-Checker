@@ -1,0 +1,29 @@
+# Document types the checker knows. The type is decided from the text before any
+# rules run, so a wrong document is caught with one clear message instead of
+# eleven confusing FDR failures. A type needs at least `min_score` points.
+# Adding a type = one entry here + its rules file + its labels file.
+types:
+  - id: fdr
+    name: "Security Deposit - Fixed Deposit Receipt"
+    rules_file: rules.yaml
+    labels_file: field_labels.yaml
+    min_score: 3
+    keywords:            # pattern: points
+      'fixed\s*deposit': 3
+      'term\s*deposit': 3
+      'deposit\s*receipt': 3
+      'stdr|tdr|fdr': 2
+      'maturity': 2
+      'principal|amount\s*deposited|deposit\s*amount': 1
+      'rate\s*of\s*interest|interest': 1
+  - id: fire_noc
+    name: "Fire Safety No Objection Certificate"
+    rules_file: fire_noc_rules.yaml
+    labels_file: fire_noc_labels.yaml
+    min_score: 4
+    keywords:
+      'no\s*objection': 3
+      'fire': 2
+      'chief\s*fire\s*officer|fire\s*(and|&)\s*emergency|fire\s*brigade|fire\s*service': 2
+      'valid\s*(up\s*to|upto|till)': 1
+      'premises|building': 1

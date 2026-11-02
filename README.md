@@ -1,13 +1,13 @@
 # SD Scrutiny Desk
 
-Checks the documents a technical institute submits to AICTE, starting with the Security Deposit FDR, and tells the scrutiny officer what is wrong, where on the document it is, which clause it breaks, and whether the document itself looks altered.
+Checks the documents a technical institute submits to AICTE (Security Deposit FDR, Fire NOC, Trust affidavit and infrastructure photographs), and tells the scrutiny officer what is wrong, where on the document it is, which clause it breaks, whether the document itself looks altered, and whether the documents of one application agree with each other.
 
 Built for SIH 2026, problem statement **SIH26261** (AICTE: application validation, document authentication and compliance verification), by Team GitHappens.
 
 ## How a document is checked
 
 1. **Arrives**: through the portal API, an upload, or the **live inbox folder**.
-2. **Document type** (D0): the system first decides what it is (Security Deposit FDR, Fire NOC, or not a supported document). A wrong document gets one clear message instead of a page of failures.
+2. **Document type** (D0): the system first decides what it is (Security Deposit FDR, Fire NOC, affidavit, or not a supported document). A wrong document gets one clear message instead of a page of failures.
 3. **Read**: the PDF text layer, or Tesseract OCR for scans (English, plus Hindi when the page is in Devanagari).
 4. **Find the fields**: label matching first (`config/field_labels.yaml`). For fields it cannot find, a **machine-learning extractor** trained on labelled receipts proposes values. The rules then check whatever was found, by either method; a value found by the ML extractor with low confidence cannot fail a document on its own.
 5. **Authenticity** (A1–A4): checks on the file itself.
@@ -36,6 +36,21 @@ Every automated check and every officer action is logged with the file's SHA-256
 
 **Fire NOC** (`config/fire_noc_rules.yaml`): N1 issued by a fire authority, N2 valid on the date of submission (warns 90 days before expiry), N3 issued to the applicant institute, N4 covers the applicant's premises (same PIN code).
 
+**Affidavit by the Trust / Society** (`config/affidavit_rules.yaml`): F1 on non-judicial stamp paper of at least Rs. 100 *(to confirm per State)*, F2 attested by a Notary / Magistrate with registration number, F3 sworn by the Chairman / President / Secretary of the applicant trust, F4 names the applicant institute, F5 executed within 6 months and not after submission, F6 contains the required undertakings (true and correct; liable to action; will abide by norms).
+
+**Infrastructure photographs** (`config/photo_rules.yaml`, `src/photos.py`)
+
+| | Check | How |
+|---|---|---|
+| P1 | Taken recently (6 months) | Camera date in the file (EXIF) |
+| P2 | Taken at the campus (1 km) | GPS in the file against the campus point in the application |
+| P3 | Not the same picture as another application | Perceptual hash plus thumbnail match against every photo on record: a resized or re-saved copy is still caught |
+| P4 | Straight from a camera | Editing software tag; no camera make or model (screenshot or forwarded) |
+
+A missing date, location or camera tag sends the photo to an officer; it never fails it on its own.
+
+**The whole application** (`config/application_rules.yaml`, `src/application.py`): which required documents are missing (no Security Deposit for Government / aided institutes), and checks no single document can show: X1 every document names the same institute, X2 the Fire NOC and the photos point to the same campus, X3 the same trust stands behind the affidavit and the deposit, X4 the Fire NOC covers the coming academic year. The officer can then prepare **one letter for the whole application**.
+
 **Authenticity, any document** (`src/authenticity.py`)
 
 | | Check | What it looks at |
@@ -61,7 +76,10 @@ Sign in at `/login`. Demo accounts (replace with the AICTE portal's own sign-in 
 
 ## Screens
 
-- **Received**: queue of every document, cases needing a person first
+- **Dashboard**: workload, most common deficiencies, alerts (Fire NOC expiring, FDR maturing or ending before the Security Deposit period, letters with no reply in 30 days), every application's status, by State
+- **Application**: all documents of one application, missing ones, checks between documents, photographs, one consolidated letter
+- **Time study**: the same receipts checked by hand and with the desk, every file timed and scored, to measure the time saved
+- **Received**: queue of every document, cases needing a person first (filter by type)
 - **Scrutiny view**: document with evidence boxes, findings, officer decision, corrections, history
 - **Check**: upload a document against an application
 - **Live inbox**: watches a folder; drop a PDF in and the result appears in a few seconds (see below)
@@ -97,6 +115,8 @@ All data is synthetic and marked SAMPLE - TEST DATA. These numbers show the meth
 |---|---|---|---|---|
 | Main | 26 FDRs, 3 layouts, 5 scans, incl. 2 careful forgeries | 16/16 | 0/10 | 0 |
 | Fire NOC | 8 NOCs | 4/4 | 0/4 | 0 |
+| Affidavit | 10 affidavits, 1 scan | 5/5 | 0/5 | 0 |
+| Photos | 19 room photos | 3/3 failed, 2/2 edited or forwarded sent to an officer | 0/14 | 0 |
 
 **The ML extractor on layouts it was never trained on** (trained only on the main set):
 
@@ -107,7 +127,9 @@ All data is synthetic and marked SAMPLE - TEST DATA. These numbers show the meth
 
 On both unseen sets, no defective receipt was passed as clean. The remaining misses are scans whose OCR text is too poor to read; those go to an officer. Full tables: `reports/`.
 
-Speed: about 0.4 s for a digital PDF and 3–4 s for a scan (OCR plus scan forensics) on a laptop.
+**Time saved** is measured, not assumed: open **Time study**, have 3 or more people check at least 10 receipts by hand and 10 with the desk, and the Results page shows minutes per file and defects found in each mode.
+
+Speed: about 0.3–0.4 s for a digital PDF and 3–4 s for a scan (OCR plus scan forensics) on a laptop.
 
 ## Run it
 
@@ -134,8 +156,10 @@ If Tesseract is missing, the app says so in a banner and sends scans to an offic
 sudo apt install tesseract-ocr tesseract-ocr-hin     # or: brew install tesseract tesseract-lang
 pip install -r requirements.txt
 python tools/generate_test_docs.py                   # test receipts, labels, mock bank records
+python tools/generate_noc_docs.py && python tools/generate_affidavit_docs.py && python tools/generate_photos.py
 python tools/train_field_model.py                    # trains models/field_model.joblib
 python tools/evaluate.py                             # writes reports/evaluation.md (add --holdout2, --no-ml)
+python tools/evaluate_noc.py && python tools/evaluate_photos.py   # Fire NOC, affidavit, photo results
 python app/app.py                                    # http://localhost:8501
 pytest -q
 ```
@@ -158,7 +182,13 @@ curl -H "Authorization: Bearer $API_TOKEN" \
      http://localhost:8501/api/v1/check
 ```
 
-Returns the document type, overall finding, each rule's status, evidence and clause, the extracted fields with their location on the page, and the rule version. Instead of `app_id` the portal can send its own application record as JSON in `application`. `GET /api/v1/rules` returns the rules in force.
+Returns the document type, overall finding, each rule's status, evidence and clause, the extracted fields with their location on the page, and the rule version. Instead of `app_id` the portal can send its own application record as JSON in `application`. `GET /api/v1/rules` returns the rules in force. `POST /api/v1/photo` (fields `photo`, `app_id`, `room`, `received`) checks one infrastructure photograph.
+
+How each mock is replaced by a real service: [docs/INTEGRATION.md](docs/INTEGRATION.md).
+
+## Testing with real documents
+
+Real receipts carry account numbers. `python tools/redact.py real.pdf safe.pdf` blacks out account, FDR, PAN, Aadhaar-like and phone numbers and e-mail addresses, and saves an image-only PDF, which the checker then reads with OCR like any scan. Check the result by eye before sharing it.
 
 ## Privacy
 
@@ -170,6 +200,9 @@ FDR numbers are not stored: the reuse ledger keeps only a SHA-256 of bank + FDR 
 config/document_types.yaml   how each document type is recognised
 config/rules.yaml            FDR rules, thresholds, clause references, sources, rule version
 config/fire_noc_rules.yaml   Fire NOC rules
+config/affidavit_rules.yaml  affidavit rules
+config/photo_rules.yaml      photo checks and required rooms
+config/application_rules.yaml  required documents, checks between documents
 config/*_labels.yaml         wording used for each field; onboarding a bank = editing this
 src/doctype.py               document type check (D0)
 src/extractor.py             text layer or OCR -> fields, each with page and box
@@ -177,6 +210,9 @@ src/ml_extractor.py          ML fallback for fields the label matcher misses
 src/authenticity.py          A1-A4
 src/rule_engine.py           FDR rules R0-R10
 src/noc_rules.py             Fire NOC rules N1-N4
+src/affidavit_rules.py       affidavit rules F1-F6
+src/photos.py                photo checks P1-P4, photo store
+src/application.py           whole-application review X1-X4, consolidated letter
 src/registry.py              mock bank service, reuse ledger, audit trail, case store (SQLite)
 src/inbox.py                 live folder watcher
 src/mailer.py                email with the letter attached (SMTP or outbox)
@@ -186,6 +222,8 @@ tools/                       test-set generators, model training, evaluation
 data/                        synthetic applications, banks, documents, labels
 models/field_model.joblib    trained ML extractor (about 160 KB)
 ```
+
+Demo order and answers to likely questions: [docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md).
 
 ## Team
 

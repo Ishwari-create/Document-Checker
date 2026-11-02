@@ -17,9 +17,9 @@
       "Maturity date": "26/26",
       "Depositor": "26/26"
     },
-    "avg_seconds_text_pdf": 0.35,
-    "avg_seconds_scan": 3.46,
-    "total_seconds": 24.5
+    "avg_seconds_text_pdf": 0.32,
+    "avg_seconds_scan": 3.36,
+    "total_seconds": 23.5
   },
   "per_rule": [
     {
@@ -173,7 +173,7 @@
         "R1"
       ],
       "review_rules": [],
-      "seconds": 3.38,
+      "seconds": 3.49,
       "note": "Drawn in favour of the trust secretary",
       "read_problems": []
     },
@@ -191,7 +191,7 @@
         "R4"
       ],
       "review_rules": [],
-      "seconds": 0.36,
+      "seconds": 0.33,
       "note": "Two programmes (Engg + Mgmt) need 50 L; FDR covers only Engg (35 L)",
       "read_problems": []
     },
@@ -209,7 +209,7 @@
         "R6"
       ],
       "review_rules": [],
-      "seconds": 0.35,
+      "seconds": 0.3,
       "note": "Deposit date is after the date of submission (post-dated)",
       "read_problems": []
     },
@@ -245,7 +245,7 @@
         "R5"
       ],
       "review_rules": [],
-      "seconds": 3.18,
+      "seconds": 3.39,
       "note": "Different institute's name",
       "read_problems": []
     },
@@ -259,7 +259,7 @@
       "expected_rules": [],
       "failed_rules": [],
       "review_rules": [],
-      "seconds": 0.34,
+      "seconds": 0.29,
       "note": "",
       "read_problems": []
     },
@@ -281,7 +281,7 @@
         "A3"
       ],
       "review_rules": [],
-      "seconds": 0.39,
+      "seconds": 0.28,
       "note": "Figures overwritten to 35 L; words and the bank's QR still say 25 L",
       "read_problems": []
     },
@@ -295,7 +295,7 @@
       "expected_rules": [],
       "failed_rules": [],
       "review_rules": [],
-      "seconds": 0.38,
+      "seconds": 0.35,
       "note": "",
       "read_problems": []
     },
@@ -327,7 +327,7 @@
       "expected_rules": [],
       "failed_rules": [],
       "review_rules": [],
-      "seconds": 0.31,
+      "seconds": 0.33,
       "note": "",
       "read_problems": []
     },
@@ -363,7 +363,7 @@
         "R3"
       ],
       "review_rules": [],
-      "seconds": 0.38,
+      "seconds": 0.33,
       "note": "8 years: follows the older instruction, not the 10-year SD period",
       "read_problems": []
     },
@@ -377,7 +377,7 @@
       "expected_rules": [],
       "failed_rules": [],
       "review_rules": [],
-      "seconds": 0.3,
+      "seconds": 0.32,
       "note": "",
       "read_problems": []
     },
@@ -397,7 +397,7 @@
       "review_rules": [
         "R9"
       ],
-      "seconds": 0.36,
+      "seconds": 0.34,
       "note": "Co-operative bank",
       "read_problems": []
     },
@@ -411,7 +411,7 @@
       "expected_rules": [],
       "failed_rules": [],
       "review_rules": [],
-      "seconds": 0.33,
+      "seconds": 0.29,
       "note": "",
       "read_problems": []
     },
@@ -429,7 +429,7 @@
         "R3"
       ],
       "review_rules": [],
-      "seconds": 0.3,
+      "seconds": 0.28,
       "note": "5 years",
       "read_problems": []
     },
@@ -443,7 +443,7 @@
       "expected_rules": [],
       "failed_rules": [],
       "review_rules": [],
-      "seconds": 0.31,
+      "seconds": 0.32,
       "note": "",
       "read_problems": []
     },
@@ -457,7 +457,7 @@
       "expected_rules": [],
       "failed_rules": [],
       "review_rules": [],
-      "seconds": 0.37,
+      "seconds": 0.36,
       "note": "",
       "read_problems": []
     },
@@ -475,7 +475,7 @@
         "R1"
       ],
       "review_rules": [],
-      "seconds": 0.3,
+      "seconds": 0.32,
       "note": "Drawn in favour of the college itself",
       "read_problems": []
     },
@@ -493,7 +493,7 @@
         "R9"
       ],
       "review_rules": [],
-      "seconds": 0.34,
+      "seconds": 0.32,
       "note": "Receipt is internally consistent, but the bank's record shows Rs. 3,50,000",
       "read_problems": []
     },
@@ -507,7 +507,7 @@
       "expected_rules": [],
       "failed_rules": [],
       "review_rules": [],
-      "seconds": 0.44,
+      "seconds": 0.37,
       "note": "",
       "read_problems": []
     },
@@ -521,7 +521,7 @@
       "expected_rules": [],
       "failed_rules": [],
       "review_rules": [],
-      "seconds": 3.99,
+      "seconds": 3.77,
       "note": "",
       "read_problems": []
     },
@@ -537,7 +537,7 @@
       "review_rules": [
         "R9"
       ],
-      "seconds": 3.24,
+      "seconds": 3.16,
       "note": "",
       "read_problems": [
         "FDR number"
@@ -559,7 +559,7 @@
       "review_rules": [
         "R9"
       ],
-      "seconds": 0.35,
+      "seconds": 0.33,
       "note": "NBFC, not a bank",
       "read_problems": []
     },
@@ -583,7 +583,7 @@
         "A3"
       ],
       "review_rules": [],
-      "seconds": 0.36,
+      "seconds": 0.29,
       "note": "Amount raised to 25 L in figures and words with a PDF editor; bank record and QR still say 15 L",
       "read_problems": []
     },
@@ -605,7 +605,7 @@
       "review_rules": [
         "A3"
       ],
-      "seconds": 3.5,
+      "seconds": 2.97,
       "note": "Amount raised to 25 L by pasting a patch into the scan; bank record still says 15 L",
       "read_problems": []
     }

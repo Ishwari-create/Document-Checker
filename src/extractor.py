@@ -513,6 +513,68 @@ def parse_noc_fields(segments: List[dict], pages: List[dict]) -> Tuple[Dict[str,
 
 NOC_KEY_FIELDS = ["noc_number", "issuing_authority", "institute_name", "address", "issue_date", "valid_upto"]
 
+_TITLE = r"(?:shri|smt\.?|sri|dr\.?|mr\.?|ms\.?|mrs\.?|prof\.?|kum\.?)"
+_DESIG = (r"(chairman|chairperson|president|secretary|managing\s*trustee|trustee|treasurer|member|principal|"
+          r"director|registrar|manager)")
+
+
+def parse_affidavit_fields(segments: List[dict], pages: List[dict]) -> Tuple[Dict[str, Any], Dict[str, dict]]:
+    """Affidavits are prose, not label: value tables, so the fields come from sentence patterns."""
+    raw = " ".join(s["text"] for s in segments)
+    flat = re.sub(r"\s+", " ", raw)
+    f: Dict[str, Any] = {"stamp_paper": False, "stamp_value": None, "deponent_name": None,
+                         "deponent_designation": None, "trust_name": None, "institute_name": None,
+                         "executed_on": None, "attested_by": None, "attestor_reg": None,
+                         "_body": flat, "_text_ok": len(flat) > 200}
+    where: Dict[str, dict] = {}
+
+    def locate(field, needle):
+        needle = (needle or "").strip().lower()[:18]
+        for seg in segments:
+            if needle and needle in re.sub(r"\s+", " ", seg["text"]).lower():
+                where[field] = {"page": seg["page"], "bbox": seg["bbox"]}
+                return
+
+    if re.search(r"non[\s-]*judicial|stamp\s*paper|e-?stamp", flat, re.I):
+        f["stamp_paper"] = True
+        top = (pages[0]["height"] if pages else 842) * 0.3
+        head = " ".join(s["text"] for s in segments if s["page"] == 0 and s["bbox"][1] < top)
+        m = (re.search(r"(?:rs\.?|inr|\u20b9)\s*([\d,]{1,7})", head, re.I)
+             or re.search(r"stamp\s*paper\s*(?:of|worth|for)?\s*(?:rs\.?|inr|\u20b9)\s*([\d,]{1,7})", flat, re.I))
+        if m:
+            f["stamp_value"] = float(m.group(1).replace(",", ""))
+            locate("stamp_value", m.group(0))
+    m = re.search(r"(?:\bI\s*[,.]\s*|\baffidavit\s+(?:I\s*[,.]?\s*)?)" + _TITLE + r"?\s*([A-Z][A-Za-z. ]{2,60}?),(.{0,160}?)\b" + _DESIG +
+                  r"\s+of\s+(?:the\s+)?([^,;]{4,90})", flat, re.I)
+    if m:
+        f["deponent_name"] = m.group(1).strip()
+        f["deponent_designation"] = re.sub(r"\s+", " ", m.group(3)).title()
+        f["trust_name"] = m.group(4).strip(" .")
+        locate("deponent_name", m.group(1))
+    m = re.search(r"(?:running|which\s*runs|managing|in\s*respect\s*of|sponsoring\s*body\s*of)\s+(?:the\s+)?"
+                  r"([A-Z][^,;]{4,90}?)(?:,|;|\s+do\s+hereby|\s+hereby|\s+situated)", flat)
+    if m:
+        f["institute_name"] = m.group(1).strip(" .")
+        locate("institute_name", m.group(1))
+    m = re.search(r"(?:verified|sworn|solemnly\s*affirmed|affirmed)\s+(?:at|before)[^.]{0,40}?\bon\b\s*(?:this\s*)?(.{6,30})",
+                  flat, re.I) or re.search(r"\bdate[d]?\s*[:\-]?\s*(.{6,20})", flat, re.I)
+    if m:
+        f["executed_on"] = parse_date(m.group(1))
+        if f["executed_on"]:
+            locate("executed_on", m.group(1))
+    _att = r"(notary(?:\s*public)?|oath\s*commissioner|(?:executive|first\s*class|judicial)?\s*magistrate)"
+    m = (re.search(_att + r"(,?\s*[A-Za-z ]{0,30}?),?\s*(?=reg)", flat, re.I)
+         or re.search(_att + r"([^.]{0,40})", flat, re.I))
+    if m:
+        f["attested_by"] = re.sub(r"\s*reg.*$", "", (m.group(1) + m.group(2)).strip(" ,"), flags=re.I).strip(" ,")
+        r = re.search(r"reg(?:istration|n)?\.?\s*no\.?\s*[:\-]?\s*([A-Z0-9][A-Z0-9/\-]{2,})", flat[m.start():m.start() + 160], re.I)
+        f["attestor_reg"] = r.group(1) if r else None
+        locate("attested_by", m.group(1))
+    return f, where
+
+
+AFFIDAVIT_KEY_FIELDS = ["stamp_value", "deponent_name", "institute_name", "executed_on", "attested_by"]
+
 
 def extract_document(source: PdfSource) -> Dict[str, Any]:
     """Like extract_fdr_fields, plus 'doc_type' (see src/doctype.py) and 'bytes'."""
@@ -523,6 +585,9 @@ def extract_document(source: PdfSource) -> Dict[str, Any]:
     if dt["type"] == "fire_noc":
         fields, where = parse_noc_fields(doc["segments"], doc["pages"])
         keys = NOC_KEY_FIELDS
+    elif dt["type"] == "affidavit":
+        fields, where = parse_affidavit_fields(doc["segments"], doc["pages"])
+        keys = AFFIDAVIT_KEY_FIELDS
     else:
         fields, where = parse_fields(doc["segments"], doc["pages"])
         keys = KEY_FIELDS

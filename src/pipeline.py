@@ -45,6 +45,19 @@ def _scan_safety(results: List[Dict[str, Any]]) -> None:
             r["reasoning"] += " (Scanned copy: the amount may have been misread, so an officer must compare it with the original.)"
 
 
+ABSENCE_RULES = {"F1", "F2", "F6"}
+
+
+def _scan_absence_safety(results: List[Dict[str, Any]]) -> None:
+    """On a scan, 'not found' may only mean OCR missed a line, so a rule that fails
+    because something is absent goes to an officer instead of failing the document."""
+    for r in results:
+        if r["rule_id"] in ABSENCE_RULES and r["status"] == "FAIL" and ("No " in r["evidence"] or "Missing" in r["evidence"]):
+            r["status"] = "UNCERTAIN"
+            r["ps_status"] = "Manual review required"
+            r["reasoning"] += " (Scanned copy: the text may have been missed by OCR, so an officer must look at the original.)"
+
+
 def _ocr_missing_reason(results: List[Dict[str, Any]]) -> None:
     """A scan on a computer without Tesseract: say why every rule is unsure."""
     for r in results:
@@ -98,8 +111,8 @@ def run_check(pdf_bytes: bytes, application: Dict[str, Any], *, submitted_on: Op
                     "The OCR engine is not installed, so the document type could not be decided. "
                     "An officer must look at it.", fix="Install Tesseract OCR or check the document by hand.")
         else:
-            d0 = _v(DT_CFG, "FAIL", "No FDR or Fire NOC wording found in the document.",
-                    "This is not a Security Deposit FDR or a Fire NOC, so no rule pack can be run.",
+            d0 = _v(DT_CFG, "FAIL", "No FDR, Fire NOC or affidavit wording found in the document.",
+                    "This is not a Security Deposit FDR, Fire NOC or affidavit, so no rule pack can be run.",
                     fix="Upload the Fixed Deposit Receipt (or Fire NOC) itself, not a covering letter or another document.")
         results = [d0]
         version = "doc-type"
@@ -113,6 +126,10 @@ def run_check(pdf_bytes: bytes, application: Dict[str, Any], *, submitted_on: Op
             from .noc_rules import check_fire_noc, noc_rules_version
             results = [d0] + check_fire_noc(ext["fields"], application, submitted_on=sub)
             version = noc_rules_version()
+        elif dt["type"] == "affidavit":
+            from .affidavit_rules import affidavit_rules_version, check_affidavit
+            results = [d0] + check_affidavit(ext["fields"], application, submitted_on=sub)
+            version = affidavit_rules_version()
         else:
             if use_ml:
                 from .ml_extractor import fill_missing_fields
@@ -127,6 +144,7 @@ def run_check(pdf_bytes: bytes, application: Dict[str, Any], *, submitted_on: Op
 
     if ext["method"] == "ocr":
         _scan_safety(results)
+        _scan_absence_safety(results)
     if ext["method"] == "ocr-missing":
         _ocr_missing_reason(results)
 

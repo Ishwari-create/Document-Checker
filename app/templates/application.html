@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}{{ a.app_id }} - SD Scrutiny Desk{% endblock %}
+{% block body %}
+{% if error %}<div class="err">{{ error }}</div>{% endif %}
+<div class="casehead">
+  <div><h1>{{ a.institute_name }}</h1>
+    <div class="facts">
+      <div><span>Application</span> {{ a.app_id }}</div><div><span>Trust / Society</span> {{ a.trust }}</div>
+      <div><span>Type</span> {{ a.institution_type }}</div><div><span>Campus</span> {{ a.address }}</div>
+      <div><span>Programmes</span> {{ a.programmes|join(', ') }}</div>
+    </div></div>
+  <div class="verdict {{ 'FAIL' if rv.status=='INCOMPLETE' else rv.status }}"><span class="small muted">Whole application</span><b>{{ rv.status_text }}</b>
+    <span class="small muted">{{ rv.open_points }} point{{ 's' if rv.open_points != 1 }} for the officer</span></div>
+</div>
+
+<div class="grid2">
+<div>
+  <h2 style="margin-top:0">Required documents</h2>
+  <div class="tablewrap">{% for d in rv.checklist %}
+    <div class="check">
+      {% if not d.required %}<span class="mark ok">-</span>{% elif not d.present %}<span class="mark no">✗</span>{% elif not d.complete or d.overall == 'FAIL' %}<span class="mark {{ 'no' if d.overall == 'FAIL' else 'part' }}">!</span>{% else %}<span class="mark ok">✓</span>{% endif %}
+      <div><b>{{ d.name }}</b>
+        <div class="small muted">{% if not d.required %}Not required for a {{ a.institution_type }} institute{% elif not d.present %}Not received{% elif d.id=='photos' %}{{ d.count }} photo{{ 's' if d.count!=1 }}{% if d.missing_rooms %}; still needed: {{ d.missing_rooms|join(', ') }}{% endif %}{% else %}<a href="{{ url_for('check', case_id=d.case.id) }}">{{ d.case.id }}</a>, received {{ d.case.received|dmy }}{% endif %}</div></div>
+      <div>{% if d.overall %}<span class="st st-{{ d.overall }}">{{ OVERALL_TEXT[d.overall] }}</span>{% endif %}</div>
+    </div>{% endfor %}
+  </div>
+  <p style="margin-top:14px"><a class="btn" href="{{ url_for('application_letter', app_id=a.app_id) }}">Prepare one letter for the whole application</a></p>
+</div>
+<div>
+  <h2 style="margin-top:0">Checks between documents</h2>
+  <p class="small muted">No single document can show these: the system compares the documents with each other and with the application.</p>
+  {% for r in rv.consistency %}{% with officer=false, show_fix=true %}{% include "_finding.html" %}{% endwith %}{% endfor %}
+</div>
+</div>
+
+<h2 id="photos">Infrastructure photographs</h2>
+<form class="panel row" method="post" enctype="multipart/form-data" action="{{ url_for('add_photo', app_id=a.app_id) }}">
+  <div><label for="room">Room</label><select id="room" name="room">{% for r in rooms %}<option>{{ r }}</option>{% endfor %}</select></div>
+  <div><label for="photo">Photo files (JPEG, straight from the camera)</label><input type="file" id="photo" name="photo" accept="image/jpeg,image/png" multiple></div>
+  <div><label for="received">Received on</label><input type="date" id="received" name="received" value="{{ today.isoformat() }}"></div>
+  <button class="btn">Check photos</button>
+</form>
+<p class="small muted">Each photo is checked for when it was taken (camera date), where (GPS against the campus location), whether the same picture was already submitted by another application (even resized or re-saved), and whether it was edited or forwarded.</p>
+<div class="photos">{% for p in photos %}
+  <div class="photo"><img src="{{ url_for('photo_img', pid=p.id) }}" alt="{{ p.room }} photo {{ p.id }}" loading="lazy">
+    <div class="body"><div style="display:flex;justify-content:space-between;gap:8px"><b>{{ p.room }}</b><span class="st st-{{ p.overall }}">{{ OVERALL_TEXT[p.overall] }}</span></div>
+      <div class="muted">{{ p.id }} · {{ p.meta.make or 'no camera info' }} {{ p.meta.model or '' }}</div>
+      <ul>{% for r in p.results %}<li><span class="st st-{{ r.status }}">{{ r.rule_id }}</span> {% if r.status=='PASS' %}{{ r.name }}{% else %}{{ r.evidence }}{% endif %}</li>{% endfor %}</ul>
+    </div></div>
+{% else %}<p class="muted">No photographs yet.</p>{% endfor %}</div>
+
+<h2>All documents received</h2>
+<div class="tablewrap"><table><thead><tr><th>Document</th><th>Type</th><th>Received</th><th>System finding</th><th>Officer</th></tr></thead><tbody>
+{% for c in cases %}<tr class="link" onclick="location.href='{{ url_for('check', case_id=c.id) }}'"><td><a href="{{ url_for('check', case_id=c.id) }}">{{ c.id }}</a></td>
+<td class="small">{{ c.doc_type.name if c.doc_type and c.doc_type.name else 'Security Deposit FDR' }}</td><td class="small">{{ c.received|dmy }}</td>
+<td><span class="st st-{{ c.overall }}">{{ OVERALL_TEXT[c.overall] }}</span></td><td class="small">{{ 'Decided' if c.decision else 'Pending' }}</td></tr>
+{% else %}<tr><td colspan="5" class="muted">Nothing received.</td></tr>{% endfor %}</tbody></table></div>
+{% endblock %}

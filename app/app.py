@@ -4,7 +4,10 @@ SD Scrutiny Desk - web front end for the Security Deposit FDR checker.
     python app/app.py            (then open http://localhost:8501)
 
 Screens
-  /              Officer queue: every received FDR with the system's finding
+  /dashboard     Officer dashboard: workload, deficiency trends, expiry alerts, measured time per file
+  /application/<id>  Whole application: missing documents, cross-document checks, photos, one letter
+  /study         Time study: manual vs assisted scrutiny, timed, to measure the time saved
+  /              Officer queue: every received document with the system's finding
   /check/<id>    Scrutiny view: receipt with evidence boxes, findings, officer decision
   /upload        Check a new receipt against an application
   /precheck      Institute self-check before submitting (nothing is recorded)
@@ -20,7 +23,9 @@ import csv
 import io
 import json
 import random
+import statistics
 import sys
+import time
 import uuid
 from datetime import date, datetime, timedelta
 from pathlib import Path
@@ -57,10 +62,12 @@ ROLE_ACCESS = {
     "queue": {"officer"}, "check": {"officer"}, "decide": {"officer"}, "correct": {"officer"},
     "letter": {"officer"}, "letter_pdf": {"officer"}, "upload": {"officer"}, "sample_pdf": {"officer"},
     "email_letter": {"officer"}, "outbox": {"officer"}, "inbox": {"officer"}, "inbox_events": {"officer"},
-    "audit": {"officer", "auditor"},
+    "audit": {"officer", "auditor"}, "dashboard": {"officer", "auditor"}, "application": {"officer"},
+    "application_letter": {"officer"}, "add_photo": {"officer"}, "photo_img": {"officer"},
+    "study": {"officer"}, "study_next": {"officer"}, "study_submit": {"officer"},
 }
-PUBLIC = {"login", "logout", "static", "api_check", "api_rules"}
-HOME = {"officer": "queue", "auditor": "audit", "institute": "precheck"}
+PUBLIC = {"login", "logout", "static", "api_check", "api_rules", "api_photo"}
+HOME = {"officer": "dashboard", "auditor": "dashboard", "institute": "precheck"}
 
 
 @app.before_request
@@ -103,15 +110,39 @@ LABELS = {r["doc_id"]: r for r in csv.DictReader(open(ROOT / "data" / "labels.cs
 CASES = CaseStore()                       # cases survive a restart (data/ledger.sqlite3)
 PAGE_CACHE: dict = {}
 
+# Sample documents of every type, shown in the queue: doc_id -> (path, label row)
+SAMPLES = {d: (DOCS / r["file"], r) for d, r in LABELS.items()}
+for _folder in ("fire_noc", "affidavits"):
+    _lab = ROOT / "data" / _folder / "labels.csv"
+    if _lab.exists():
+        SAMPLES.update({r["doc_id"]: (ROOT / "data" / _folder / r["file"], r) for r in csv.DictReader(open(_lab))})
+
+from src.photos import PhotoStore, check_photo, load_photo_pack, thumbnail   # noqa: E402
+PHOTOS = PhotoStore()
+
+
+def ensure_sample_photos():
+    """Load the synthetic infrastructure photos once (in order, so the reused one meets its original)."""
+    lab = ROOT / "data" / "photos" / "labels.csv"
+    if not lab.exists() or PHOTOS.conn.execute("SELECT 1 FROM photos WHERE origin='sample' LIMIT 1").fetchone():
+        return
+    for r in csv.DictReader(open(lab)):
+        data = (ROOT / "data" / "photos" / r["file"]).read_bytes()
+        out = check_photo(data, APPS[r["app_id"]], r["room"], submitted_on=date.fromisoformat(r["submitted_on"]),
+                          store=PHOTOS, photo_id=r["photo_id"])
+        PHOTOS.add({"id": r["photo_id"], "app_id": r["app_id"], "room": r["room"], "meta": out["meta"],
+                    "results": out["results"], "overall": out["overall"], "image": data,
+                    "submitted_on": r["submitted_on"], "origin": "sample"})
+
 STATUS_ORDER = {"FAIL": 0, "UNCERTAIN": 1, "PASS": 2, "NA": 3, "EXEMPT": 4}
 RULE_ORDER = ["D0", "R0", "R1", "R2", "R3", "R4", "R5", "R6", "R7", "R8", "R9", "R10", "N1", "N2", "N3", "N4",
-              "A1", "A2", "A3", "A4"]
+              "F1", "F2", "F3", "F4", "F5", "F6", "A1", "A2", "A3", "A4"]
 
 
 def finding_key(r):
     return (STATUS_ORDER.get(r["status"], 9), RULE_ORDER.index(r["rule_id"]) if r["rule_id"] in RULE_ORDER else 99)
 OVERALL_TEXT = {"PASS": "No deficiency found", "FAIL": "Deficiency found", "UNCERTAIN": "Needs officer review",
-                "EXEMPT": "Not required"}
+                "EXEMPT": "Not required", "NA": "Not applicable"}
 
 
 # ---------------------------------------------------------------------------
@@ -128,8 +159,10 @@ def page_image(sha: str, pdf: bytes) -> str:
 
 def make_case(case_id: str, pdf: bytes, app_rec: dict, received: date, origin: str, record: bool = True,
               actor: str = "system") -> dict:
+    t0 = time.perf_counter()
     out = run_check(pdf, app_rec, submitted_on=received, issuer=ISSUER, ledger=LEDGER if record else None,
                     actor=actor, record=record)
+    out["system_seconds"] = round(time.perf_counter() - t0, 2)
     out["results"].sort(key=finding_key)
     req, basis = required_amount({r["id"]: r for r in PACK["rules"]}["R4"], app_rec)
     case = {"id": case_id, "pdf": pdf, "app": app_rec, "received": received, "origin": origin,
@@ -140,10 +173,14 @@ def make_case(case_id: str, pdf: bytes, app_rec: dict, received: date, origin: s
 
 def sample_case(doc_id: str) -> dict:
     if doc_id not in CASES:
-        lab = LABELS[doc_id]
-        make_case(doc_id, (DOCS / lab["file"]).read_bytes(), APPS[lab["app_id"]],
+        path, lab = SAMPLES[doc_id]
+        make_case(doc_id, path.read_bytes(), APPS[lab["app_id"]],
                   date.fromisoformat(lab["submitted_on"]), origin="sample")
     return CASES[doc_id]
+
+
+def all_cases() -> list:
+    return [sample_case(d) for d in sorted(SAMPLES)] + [c for c in CASES.values() if c["origin"] in ("upload", "inbox")]
 
 
 def boxes_for(case: dict) -> list:
@@ -183,7 +220,7 @@ def _dmy(s):
 @app.context_processor
 def _globals():
     return {"OVERALL_TEXT": OVERALL_TEXT, "rules_version": PACK.get("version"), "user": g.get("user"),
-            "ocr": ocr_status()}
+            "ocr": ocr_status(), "apps_known": APPS}
 
 
 # ---------------------------------------------------------------------------
@@ -191,23 +228,29 @@ def _globals():
 # ---------------------------------------------------------------------------
 @app.route("/")
 def queue():
-    cases = [sample_case(d) for d in sorted(LABELS)]
-    cases += [c for c in CASES.values() if c["origin"] in ("upload", "inbox")]
+    cases = all_cases()
+    kind = request.args.get("type")
+    if kind:
+        cases = [c for c in cases if ((c.get("doc_type") or {}).get("type") or "fdr") == kind]
     order = {"FAIL": 1, "UNCERTAIN": 0, "PASS": 2, "EXEMPT": 3}
     cases.sort(key=lambda c: (c["decision"] is not None, order.get(c["overall"], 9), c["id"]))
     counts = {k: sum(1 for c in cases if c["overall"] == k) for k in order}
-    return render_template("queue.html", cases=cases, counts=counts, pending=sum(c["decision"] is None for c in cases))
+    return render_template("queue.html", cases=cases, counts=counts, pending=sum(c["decision"] is None for c in cases),
+                           kind=kind)
 
 
 @app.route("/check/<case_id>")
 def check(case_id):
-    case = CASES.get(case_id) or (sample_case(case_id) if case_id in LABELS else None)
+    case = CASES.get(case_id) or (sample_case(case_id) if case_id in SAMPLES else None)
     if case is None:
         abort(404)
+    if g.user["role"] == "officer" and not case.get("opened_at") and not case.get("decision"):
+        case["opened_at"] = datetime.now().isoformat(timespec="seconds")      # for officer time per file
+        CASES.save(case)
     pages = case["extraction"]["pages"] or [{"width": 595, "height": 842}]
     return render_template("check.html", c=case, page=pages[0], img=page_image(case["sha256"], case["pdf"]),
                            boxes=boxes_for(case), history=LEDGER.history(case["app"].get("app_id"), 12),
-                           label=LABELS.get(case_id), correctable=CORRECTABLE)
+                           label=SAMPLES.get(case_id, (None, None))[1], correctable=CORRECTABLE)
 
 
 @app.route("/check/<case_id>/decide", methods=["POST"])
@@ -231,8 +274,12 @@ def decide(case_id):
                                         "with a reason, or prepare a deficiency letter instead.")
     if any(o["officer"] == "disagree" and not o["note"] for o in overrides):
         return render_check_error(case, "Give a reason for every finding you overrule. It is kept in the audit trail.")
+    now = datetime.now()
     case["decision"] = {"action": action, "officer": officer, "agreed": agreed, "overrides": overrides,
-                        "at": datetime.now().isoformat(timespec="seconds")}
+                        "at": now.isoformat(timespec="seconds")}
+    if case.get("opened_at"):
+        secs = (now - datetime.fromisoformat(case["opened_at"])).total_seconds()
+        case["decision"]["officer_seconds"] = round(secs) if secs < 3 * 3600 else None   # ignore files left open
     CASES.save(case)
     LEDGER.log(officer, f"officer_{action}", case["app"].get("app_id", "?"), case["sha256"],
                case["rules_version"], action, case["decision"])
@@ -245,7 +292,7 @@ def render_check_error(case, msg):
     pages = case["extraction"]["pages"] or [{"width": 595, "height": 842}]
     return render_template("check.html", c=case, page=pages[0], img=page_image(case["sha256"], case["pdf"]),
                            boxes=boxes_for(case), history=LEDGER.history(case["app"].get("app_id"), 12),
-                           label=LABELS.get(case["id"]), error=msg, correctable=CORRECTABLE), 400
+                           label=SAMPLES.get(case["id"], (None, None))[1], error=msg, correctable=CORRECTABLE), 400
 
 
 @app.route("/check/<case_id>/letter")
@@ -377,7 +424,7 @@ def _inbox_handler(path, data, sub):
     ext = extract_document(data)
     if ext["doc_type"]["type"] is None:
         why = ("scanned copy, and the OCR engine is not installed" if ext["method"] == "ocr-missing"
-               else "no Fixed Deposit Receipt or Fire NOC wording found")
+               else "no Fixed Deposit Receipt, Fire NOC or affidavit wording found")
         return {"error": f"Not a supported document ({why}). Nothing was checked."}
     if app_rec is None:
         f = ext["fields"]
@@ -568,7 +615,8 @@ def evaluation():
         before, after = load(f"evaluation_{k}_noml"), load(f"evaluation_{k}")
         if before and after:
             unseen.append({"name": name, "before": before["summary"], "after": after["summary"]})
-    return render_template("evaluation.html", ev=ev, unseen=unseen, noc=load("evaluation_noc"))
+    return render_template("evaluation.html", ev=ev, unseen=unseen, noc=load("evaluation_noc"),
+                           aff=load("evaluation_affidavit"), photos=load("evaluation_photos"), study=study_summary())
 
 
 @app.route("/audit")
@@ -586,10 +634,259 @@ def rules():
 
 @app.route("/sample/<doc_id>.pdf")
 def sample_pdf(doc_id):
-    case = CASES.get(doc_id) or (sample_case(doc_id) if doc_id in LABELS else None)
+    case = CASES.get(doc_id) or (sample_case(doc_id) if doc_id in SAMPLES else None)
     if not case:
         abort(404)
     return Response(case["pdf"], mimetype="application/pdf")
+
+# ---------------------------------------------------------------------------
+# Whole application: every document together, missing ones, cross-document checks
+# ---------------------------------------------------------------------------
+from src.application import application_letter, review_application   # noqa: E402
+
+
+def app_review(app_id: str):
+    ensure_sample_photos()
+    cases = [c for c in all_cases() if c["app"].get("app_id") == app_id]
+    photos = PHOTOS.for_app(app_id)
+    return cases, photos, review_application(APPS[app_id], cases, photos)
+
+
+@app.route("/application/<app_id>")
+def application(app_id):
+    if app_id not in APPS:
+        abort(404)
+    cases, photos, rv = app_review(app_id)
+    return render_template("application.html", a=APPS[app_id], rv=rv, cases=sorted(cases, key=lambda c: c["id"]),
+                           photos=photos, rooms=load_photo_pack()["rooms"], today=date.today(),
+                           error=request.args.get("error"))
+
+
+@app.route("/application/<app_id>/photo", methods=["POST"])
+def add_photo(app_id):
+    if app_id not in APPS:
+        abort(404)
+    files = [f for f in request.files.getlist("photo") if f and f.filename]
+    if not files:
+        return redirect(url_for("application", app_id=app_id, error="Choose one or more photographs (JPEG)."))
+    room = request.form.get("room") or "Other"
+    received = date.fromisoformat(request.form.get("received") or date.today().isoformat())
+    for f in files:
+        data = f.read()
+        pid = "PH" + uuid.uuid4().hex[:6].upper()
+        try:
+            out = check_photo(data, APPS[app_id], room, submitted_on=received, store=PHOTOS, photo_id=pid)
+        except Exception:
+            return redirect(url_for("application", app_id=app_id, error=f"'{f.filename}' is not a readable image."))
+        PHOTOS.add({"id": pid, "app_id": app_id, "room": room, "meta": out["meta"], "results": out["results"],
+                    "overall": out["overall"], "image": data, "submitted_on": received.isoformat(), "origin": "upload"})
+        LEDGER.log(g.user["name"], "photo_check", app_id, out["meta"]["sha256"], out["rules_version"], out["overall"],
+                   {r["rule_id"]: r["status"] for r in out["results"]})
+    return redirect(url_for("application", app_id=app_id) + "#photos")
+
+
+@app.route("/photo/<pid>.jpg")
+def photo_img(pid):
+    p = PHOTOS.get(pid) or abort(404)
+    return Response(thumbnail(p["image"], int(request.args.get("w", 360))), mimetype="image/jpeg")
+
+
+@app.route("/application/<app_id>/letter", endpoint="application_letter")
+def application_letter_view(app_id):
+    if app_id not in APPS:
+        abort(404)
+    _, photos, rv = app_review(app_id)
+    text = application_letter(APPS[app_id], rv, photos, officer=g.user["name"])
+    if request.args.get("download"):
+        return Response(text, mimetype="text/plain",
+                        headers={"Content-Disposition": f"attachment; filename=deficiency_{app_id}.txt"})
+    return render_template("app_letter.html", a=APPS[app_id], text=text, rv=rv)
+
+
+
+# ---------------------------------------------------------------------------
+# Dashboard: workload, trends, alerts, measured time
+# ---------------------------------------------------------------------------
+def _days(a, b):
+    return (a - b).days
+
+
+@app.route("/dashboard")
+def dashboard():
+    from src.rule_engine import _d
+    ensure_sample_photos()
+    as_of = date.fromisoformat(request.args["as_of"]) if request.args.get("as_of") else date.today()
+    cases = all_cases()
+    photos = PHOTOS.all()
+    kinds = {"fdr": "Security Deposit FDR", "fire_noc": "Fire NOC", "affidavit": "Affidavit"}
+    by_kind = {k: [c for c in cases if ((c.get("doc_type") or {}).get("type") or "fdr") == k] for k in kinds}
+
+    # deficiency types: count every FAIL by its problem label
+    trend: dict = {}
+    for c in cases:
+        for r in c["results"]:
+            if r["status"] == "FAIL":
+                trend[(r["rule_id"], r.get("problem") or r["name"])] = trend.get((r["rule_id"], r.get("problem") or r["name"]), 0) + 1
+    for p in photos:
+        for r in p["results"]:
+            if r["status"] == "FAIL":
+                trend[(r["rule_id"], r["problem"])] = trend.get((r["rule_id"], r["problem"]), 0) + 1
+    trend = sorted(trend.items(), key=lambda t: -t[1])[:10]
+
+    # alerts
+    alerts = []
+    for c in by_kind["fire_noc"]:
+        until = _d(c["extraction"]["fields"].get("valid_upto"))
+        if until and _days(until, as_of) <= 90:
+            alerts.append({"level": "FAIL" if until < as_of else "UNCERTAIN", "case": c,
+                           "text": (f"Fire NOC expired on {until:%d %b %Y}" if until < as_of else
+                                    f"Fire NOC expires on {until:%d %b %Y} ({_days(until, as_of)} days)"),
+                           "sort": _days(until, as_of)})
+    sd_years = next((r.get("minimum_tenure_years") for r in PACK["rules"] if r["id"] == "R3"), 10) or 10
+    for c in by_kind["fdr"]:
+        f = c["extraction"]["fields"]
+        mat, iss = _d(f.get("maturity_date")), _d(f.get("issue_date"))
+        if c["overall"] == "EXEMPT" or not mat:
+            continue
+        if _days(mat, as_of) <= 180:
+            alerts.append({"level": "FAIL" if mat < as_of else "UNCERTAIN", "case": c, "sort": _days(mat, as_of),
+                           "text": f"FDR {'matured' if mat < as_of else 'matures'} on {mat:%d %b %Y}: Security Deposit must be renewed"})
+        elif iss and (mat - iss).days < sd_years * 365 - 5:
+            alerts.append({"level": "UNCERTAIN", "case": c, "sort": _days(mat, as_of),
+                           "text": f"FDR matures on {mat:%d %b %Y}, before the {sd_years}-year Security Deposit period ends: renewal reminder needed"})
+    for c in cases:
+        e = c.get("email")
+        if e and e.get("at"):
+            sent = datetime.fromisoformat(e["at"]).date()
+            if _days(as_of, sent) > 30:
+                alerts.append({"level": "UNCERTAIN", "case": c, "sort": -_days(as_of, sent),
+                               "text": f"Deficiency letter sent {sent:%d %b %Y}; no corrected document received in {_days(as_of, sent)} days"})
+    alerts.sort(key=lambda a: a["sort"])
+
+    # applications
+    apps_rows = []
+    for app_id, a in APPS.items():
+        cs = [c for c in cases if c["app"].get("app_id") == app_id]
+        ps = [p for p in photos if p["app_id"] == app_id]
+        rv = review_application(a, cs, ps)
+        apps_rows.append({"a": a, "rv": rv, "docs": len(cs) + len(ps)})
+    order = {"FAIL": 0, "INCOMPLETE": 1, "UNCERTAIN": 2, "PASS": 3}
+    apps_rows.sort(key=lambda r: (order.get(r["rv"]["status"], 9), r["a"]["app_id"]))
+    states: dict = {}
+    for r in apps_rows:
+        s = states.setdefault(r["a"]["state"], {"apps": 0, "def": 0})
+        s["apps"] += 1
+        s["def"] += r["rv"]["status"] in ("FAIL", "INCOMPLETE")
+
+    decided = [c["decision"]["officer_seconds"] for c in cases if c.get("decision") and c["decision"].get("officer_seconds")]
+    sys_t = [c["system_seconds"] for c in cases if c.get("system_seconds")]
+    kpi = {"documents": len(cases) + len(photos), "pending": sum(1 for c in cases if not c.get("decision")),
+           "deficient": sum(1 for c in cases if c["overall"] == "FAIL") + sum(1 for p in photos if p["overall"] == "FAIL"),
+           "review": sum(1 for c in cases if c["overall"] == "UNCERTAIN") + sum(1 for p in photos if p["overall"] == "UNCERTAIN"),
+           "officer_median": round(statistics.median(decided) / 60, 1) if decided else None, "decided": len(decided),
+           "system_median": round(statistics.median(sys_t), 1) if sys_t else None}
+    return render_template("dashboard.html", kpi=kpi, trend=trend, alerts=alerts[:15], n_alerts=len(alerts),
+                           apps_rows=apps_rows, states=sorted(states.items()), by_kind={k: len(v) for k, v in by_kind.items()},
+                           kinds=kinds, n_photos=len(photos), as_of=as_of, study=study_summary())
+
+
+# ---------------------------------------------------------------------------
+# Time study: the same files checked by hand and with the desk, timed
+# ---------------------------------------------------------------------------
+import sqlite3   # noqa: E402
+
+STUDY_DB = sqlite3.connect(str(ROOT / "data" / "ledger.sqlite3"), check_same_thread=False)
+STUDY_DB.execute("CREATE TABLE IF NOT EXISTS study (id INTEGER PRIMARY KEY, at TEXT, user TEXT, mode TEXT, doc_id TEXT, "
+                 "seconds REAL, marked TEXT, truth TEXT)")
+STUDY_DB.commit()
+STUDY_RULES = ["R1", "R2", "R3", "R4", "R5", "R6", "R7", "R8", "R9", "R10", "A1", "A2", "A3", "A4"]
+
+
+def study_summary() -> dict:
+    rows = STUDY_DB.execute("SELECT mode, seconds, marked, truth FROM study").fetchall()
+    out = {}
+    for mode in ("manual", "assisted"):
+        rs = [r for r in rows if r[0] == mode]
+        if not rs:
+            continue
+        planted = sum(len(json.loads(t)) for _, _, _, t in rs)
+        caught = sum(len(set(json.loads(m)) & set(json.loads(t))) for _, _, m, t in rs)
+        false = sum(len(set(json.loads(m)) - set(json.loads(t))) for _, _, m, t in rs)
+        secs = [s for _, s, _, _ in rs]
+        out[mode] = {"files": len(rs), "mean_min": round(statistics.mean(secs) / 60, 1),
+                     "median_min": round(statistics.median(secs) / 60, 1),
+                     "caught": f"{caught}/{planted}", "recall": round(caught / planted, 2) if planted else None,
+                     "false_marks": false}
+    if "manual" in out and "assisted" in out and out["manual"]["mean_min"]:
+        out["saved_pct"] = round(100 * (1 - out["assisted"]["mean_min"] / out["manual"]["mean_min"]))
+    return out
+
+
+@app.route("/study")
+def study():
+    rows = STUDY_DB.execute("SELECT at, user, mode, doc_id, seconds, marked, truth FROM study ORDER BY id DESC LIMIT 40").fetchall()
+    return render_template("study.html", s=study_summary(), rows=[
+        {"at": r[0], "user": r[1], "mode": r[2], "doc": r[3], "min": round(r[4] / 60, 1),
+         "marked": json.loads(r[5]), "truth": json.loads(r[6])} for r in rows], last=session.pop("study_last", None))
+
+
+@app.route("/study/next")
+def study_next():
+    mode = request.args.get("mode", "manual")
+    done = {r[0] for r in STUDY_DB.execute("SELECT doc_id FROM study WHERE user=? AND mode=?", (g.user["username"], mode))}
+    pool = [d for d in sorted(LABELS) if d not in done] or sorted(LABELS)
+    doc = random.Random(f"{g.user['username']}{mode}{len(done)}").choice(pool)
+    case = sample_case(doc)
+    session["study"] = {"doc": doc, "mode": mode, "start": time.time()}
+    problems = {r["id"]: r.get("problem") or r["name"] for r in PACK["rules"] if r["id"] in STUDY_RULES}
+    problems.update({"A1": "Edited after issue", "A2": "Values in a different font / printed over",
+                     "A3": "QR code does not match", "A4": "Pasted patch in a scan"})
+    pages = case["extraction"]["pages"] or [{"width": 595, "height": 842}]
+    return render_template("study_doc.html", c=case, mode=mode, img=page_image(case["sha256"], case["pdf"]), page=pages[0],
+                           problems=problems, n_done=len(done),
+                           system_fail={r["rule_id"] for r in case["results"] if r["status"] == "FAIL"})
+
+
+@app.route("/study/submit", methods=["POST"])
+def study_submit():
+    st = session.pop("study", None)
+    if not st:
+        return redirect(url_for("study"))
+    secs = time.time() - st["start"]
+    marked = sorted(set(request.form.getlist("rule")) & set(STUDY_RULES))
+    truth = [x for x in LABELS[st["doc"]]["expected_fail_rules"].split(";") if x in STUDY_RULES]
+    STUDY_DB.execute("INSERT INTO study (at, user, mode, doc_id, seconds, marked, truth) VALUES (?,?,?,?,?,?,?)",
+                     (datetime.now().isoformat(timespec="seconds"), g.user["username"], st["mode"], st["doc"], secs,
+                      json.dumps(marked), json.dumps(truth)))
+    STUDY_DB.commit()
+    session["study_last"] = {"doc": st["doc"], "mode": st["mode"], "min": round(secs / 60, 1),
+                             "missed": sorted(set(truth) - set(marked)), "extra": sorted(set(marked) - set(truth)),
+                             "truth": truth}
+    if request.form.get("again"):
+        return redirect(url_for("study_next", mode=st["mode"]))
+    return redirect(url_for("study"))
+
+
+@app.route("/api/v1/photo", methods=["POST"])
+def api_photo():
+    """POST multipart: photo (JPEG), app_id, room, received (optional). Bearer token as for /api/v1/check."""
+    if not _api_auth():
+        return jsonify({"error": "missing or wrong bearer token"}), 401
+    f, app_id = request.files.get("photo"), request.form.get("app_id")
+    if not f or app_id not in APPS:
+        return jsonify({"error": "send 'photo' and the 'app_id' of a known application"}), 400
+    received = date.fromisoformat(request.form["received"]) if request.form.get("received") else date.today()
+    data = f.read()
+    pid = "PH" + uuid.uuid4().hex[:6].upper()
+    out = check_photo(data, APPS[app_id], request.form.get("room", "Other"), submitted_on=received, store=PHOTOS, photo_id=pid)
+    PHOTOS.add({"id": pid, "app_id": app_id, "room": request.form.get("room", "Other"), "meta": out["meta"],
+                "results": out["results"], "overall": out["overall"], "image": data, "submitted_on": received.isoformat(),
+                "origin": "api"})
+    return jsonify({"photo_id": pid, "overall": out["overall"], "rules_version": out["rules_version"],
+                    "metadata": {k: out["meta"][k] for k in ("taken", "lat", "lon", "make", "model", "software")},
+                    "findings": [{k: r[k] for k in ("rule_id", "name", "status", "evidence", "reasoning", "fix")}
+                                 for r in out["results"]],
+                    "note": "Decision support only. A FAIL is a point for an officer, not a rejection."})
 
 
 if __name__ == "__main__":

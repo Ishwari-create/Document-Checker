@@ -1,0 +1,76 @@
+pack: affidavit
+version: "2026.11-f1"
+document_label: "Affidavit by the Trust / Society"
+
+# Values below follow the affidavit format in the AICTE Approval Process Handbook
+# appendices as we understood it. Items marked verified: false must be confirmed
+# against the current APH 2024-27 before real use.
+sources:
+  APH_AFF: >-
+    AICTE Approval Process Handbook, appendix: affidavit to be submitted by the
+    Chairman / Secretary of the Trust / Society on non-judicial stamp paper, attested
+    by a Notary or Magistrate (exact appendix number and stamp value to confirm)
+  STAMP: "State Stamp Acts: affidavits are executed on non-judicial stamp paper; minimum value varies by state"
+  PRACTICE: "Standard scrutiny check, not a handbook clause"
+
+rules:
+  - id: F1
+    name: "On non-judicial stamp paper of the required value"
+    problem: "Stamp paper missing or of too low a value"
+    severity: FATAL
+    source: APH_AFF
+    clause: "APH appendix: affidavit format (to confirm)"
+    verified: false
+    min_stamp_value: 100
+    fix_hint: "Execute the affidavit on non-judicial stamp paper of at least Rs. 100 (or the value your State requires)."
+  - id: F2
+    name: "Attested by a Notary or Magistrate"
+    problem: "Not attested by a Notary / Magistrate"
+    severity: FATAL
+    source: APH_AFF
+    clause: "APH appendix: affidavit format (to confirm)"
+    verified: false
+    attest_patterns: ['notary', 'oath\s*commissioner', 'magistrate', 'executive\s*magistrate']
+    fix_hint: "Get the affidavit sworn before a Notary Public or a First Class / Executive Magistrate, with seal and registration number."
+  - id: F3
+    name: "Sworn by an office-bearer of the applicant Trust / Society"
+    problem: "Deponent is not an authorised office-bearer"
+    severity: FATAL
+    source: APH_AFF
+    clause: "APH appendix: affidavit by Chairman / Secretary"
+    verified: false
+    designations: ['chairman', 'chairperson', 'president', 'secretary', 'managing\s*trustee']
+    pass_score: 85
+    review_score: 65
+    fix_hint: "The affidavit must be sworn by the Chairman / President / Secretary of the Trust or Society that runs the institute."
+  - id: F4
+    name: "Names the applicant institute"
+    problem: "Affidavit is for a different institute"
+    severity: FATAL
+    source: PRACTICE
+    clause: "Scrutiny practice"
+    verified: true
+    pass_score: 88
+    review_score: 70
+    fix_hint: "Name the institute exactly as registered on the AICTE portal."
+  - id: F5
+    name: "Executed for this application cycle"
+    problem: "Affidavit is too old or post-dated"
+    severity: FATAL
+    source: PRACTICE
+    clause: "Scrutiny practice (executed within the approval cycle)"
+    verified: true
+    max_age_days: 180
+    fix_hint: "Execute a fresh affidavit for the current approval cycle (dated within the last 6 months, not after submission)."
+  - id: F6
+    name: "Contains the required undertakings"
+    problem: "Required undertaking missing"
+    severity: FATAL
+    source: APH_AFF
+    clause: "APH appendix: affidavit format (to confirm)"
+    verified: false
+    undertakings:
+      truth: ["information.{0,40}(true|correct)", "true\\s*(and|&)\\s*correct"]
+      liability: ["liable.{0,60}(action|withdraw|penal)", "withdrawal\\s*of\\s*approval"]
+      compliance: ["abide|comply|follow.{0,40}(norms|regulations|guidelines)"]
+    fix_hint: "Use the affidavit format in the Approval Process Handbook without removing any paragraph."

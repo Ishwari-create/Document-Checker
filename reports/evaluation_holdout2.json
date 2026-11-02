@@ -17,9 +17,9 @@
       "Maturity date": "7/8",
       "Depositor": "7/8"
     },
-    "avg_seconds_text_pdf": 0.46,
-    "avg_seconds_scan": 3.4,
-    "total_seconds": 9.6
+    "avg_seconds_text_pdf": 0.42,
+    "avg_seconds_scan": 3.25,
+    "total_seconds": 9.0
   },
   "per_rule": [
     {
@@ -169,7 +169,7 @@
       "expected_rules": [],
       "failed_rules": [],
       "review_rules": [],
-      "seconds": 1.28,
+      "seconds": 1.17,
       "note": "held-out layout",
       "read_problems": []
     },
@@ -187,7 +187,7 @@
         "R3",
         "R6"
       ],
-      "seconds": 3.43,
+      "seconds": 3.42,
       "note": "held-out layout",
       "read_problems": [
         "maturity date",
@@ -205,7 +205,7 @@
       "expected_rules": [],
       "failed_rules": [],
       "review_rules": [],
-      "seconds": 0.25,
+      "seconds": 0.24,
       "note": "held-out layout",
       "read_problems": []
     },
@@ -219,7 +219,7 @@
       "expected_rules": [],
       "failed_rules": [],
       "review_rules": [],
-      "seconds": 0.28,
+      "seconds": 0.24,
       "note": "held-out layout",
       "read_problems": []
     },
@@ -237,7 +237,7 @@
         "R3"
       ],
       "review_rules": [],
-      "seconds": 0.33,
+      "seconds": 0.29,
       "note": "held-out layout",
       "read_problems": []
     },
@@ -255,7 +255,7 @@
       "review_rules": [
         "R1"
       ],
-      "seconds": 3.36,
+      "seconds": 3.09,
       "note": "held-out layout",
       "read_problems": [
         "payee (partly read)"
@@ -275,7 +275,7 @@
         "R4"
       ],
       "review_rules": [],
-      "seconds": 0.3,
+      "seconds": 0.24,
       "note": "held-out layout",
       "read_problems": []
     },
@@ -293,7 +293,7 @@
       "review_rules": [
         "R5"
       ],
-      "seconds": 0.34,
+      "seconds": 0.32,
       "note": "held-out layout",
       "read_problems": []
     }

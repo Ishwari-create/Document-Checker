@@ -2,6 +2,7 @@
   "summary": {
     "documents": 8,
     "type_recognised": 8,
+    "defective_passed": 0,
     "defects_caught_by_right_rule": "4/4",
     "clean_wrongly_failed": 0,
     "document_accuracy": 1.0

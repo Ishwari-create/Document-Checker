@@ -9,9 +9,10 @@
 </head>
 <body>
 <header class="bar">
-  <a class="brand" href="{{ url_for('queue') }}">SD Scrutiny Desk<span>AICTE document scrutiny</span></a>
+  <a class="brand" href="{{ url_for('dashboard') if user and user.role != 'institute' else url_for('precheck') }}">SD Scrutiny Desk<span>AICTE document scrutiny</span></a>
   {% set ep = request.endpoint %}
   {% if user %}<nav aria-label="Main">
+    {% if user.role in ('officer','auditor') %}<a href="{{ url_for('dashboard') }}" class="{{ 'on' if ep in ('dashboard','application','application_letter') }}">Dashboard</a>{% endif %}
     {% if user.role == 'officer' %}
     <a href="{{ url_for('queue') }}" class="{{ 'on' if ep in ('queue','check','letter') }}">Received</a>
     <a href="{{ url_for('upload') }}" class="{{ 'on' if ep=='upload' }}">Check</a>

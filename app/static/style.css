@@ -104,3 +104,26 @@ input[type=password]{font:inherit;font-size:.93rem;padding:7px 9px;border:1px so
 tr.fresh td{animation:flash 2.5s ease-out}
 @keyframes flash{from{background:#FFF3C4}to{background:transparent}}
 @media (prefers-reduced-motion:reduce){tr.fresh td{animation:none}}
+/* dashboard and application view */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin:14px 0 20px}
+.kpis div{background:var(--sheet);border:1px solid var(--rule);border-radius:4px;padding:12px 14px;font-size:.88rem;color:var(--muted)}
+.kpis b{display:block;font-size:1.6rem;color:var(--ink);font-variant-numeric:tabular-nums;line-height:1.2}
+.bars{display:grid;grid-template-columns:minmax(0,1fr) 3fr auto;gap:6px 10px;align-items:center;font-size:.88rem}
+.bars .track{background:#ECEFEA;height:12px;border-radius:2px}
+.bars .fill{background:var(--fail);height:12px;border-radius:2px}
+.bars .fill.alt{background:var(--file)}
+.alert{display:flex;gap:10px;align-items:baseline;padding:8px 0;border-bottom:1px solid var(--rule);font-size:.9rem}
+.check{display:grid;grid-template-columns:1.3em 1fr auto;gap:4px 10px;padding:10px 12px;border-bottom:1px solid var(--rule);background:var(--sheet);align-items:baseline}
+.check .mark{font-weight:700}
+.check .mark.ok{color:var(--pass)} .check .mark.no{color:var(--fail)} .check .mark.part{color:var(--review)}
+.photos{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+.photo{background:var(--sheet);border:1px solid var(--rule);border-radius:4px;overflow:hidden}
+.photo img{width:100%;display:block;aspect-ratio:3/2;object-fit:cover;background:#ddd}
+.photo .body{padding:10px 12px;font-size:.86rem}
+.photo ul{margin:6px 0 0;padding-left:1.1em}
+.photo li{margin:2px 0}
+.studydoc{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:24px;align-items:start}
+.studydoc img{width:100%;border:1px solid var(--rule)}
+.ticks label{font-weight:400;display:flex;gap:8px;align-items:baseline;margin:4px 0}
+.clock{font-variant-numeric:tabular-nums;font-size:1.4rem;font-weight:700}
+@media (max-width:900px){.studydoc{grid-template-columns:1fr}.bars{grid-template-columns:1fr 2fr auto}}
